@@ -52,6 +52,27 @@ class MeView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class UploadPhotoView(APIView):
+    def post(self, request):
+        photo = request.FILES.get('photo')
+        if not photo:
+            return Response({'error': 'Aucun fichier fourni.'}, status=status.HTTP_400_BAD_REQUEST)
+        if photo.size > 5 * 1024 * 1024:
+            return Response({'error': 'La photo ne doit pas dépasser 5 Mo.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not photo.content_type.startswith('image/'):
+            return Response({'error': 'Le fichier doit être une image.'}, status=status.HTTP_400_BAD_REQUEST)
+        request.user.photo = photo
+        request.user.save()
+        return Response(UserSerializer(request.user).data)
+
+    def delete(self, request):
+        if request.user.photo:
+            request.user.photo.delete(save=False)
+            request.user.photo = None
+            request.user.save()
+        return Response(UserSerializer(request.user).data)
+
+
 class ChangePasswordView(APIView):
     def post(self, request):
         old_password = request.data.get('old_password', '')

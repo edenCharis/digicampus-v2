@@ -1,11 +1,13 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { User, Mail, Lock, CheckCircle2, AlertTriangle, Pencil, X, Eye, EyeOff } from 'lucide-react'
-import { apiFetch } from '@/lib/api'
+import { useEffect, useState, useRef } from 'react'
+import { User, Mail, Lock, CheckCircle2, AlertTriangle, Pencil, X, Eye, EyeOff, Camera, Trash2 } from 'lucide-react'
+import { apiFetch, apiUpload } from '@/lib/api'
 import { ROLE_LABELS } from '@/lib/utils'
 
+const MEDIA_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')
+
 interface Me {
-  id: number; login: string; nom: string; email: string; role: string;
+  id: number; login: string; nom: string; email: string; photo: string | null; role: string;
   university_name: string | null; etablissement_name: string | null; created_at: string;
 }
 
@@ -22,7 +24,9 @@ export default function ComptePage() {
   const [showOld, setShowOld]     = useState(false)
   const [showNew, setShowNew]     = useState(false)
   const [saving, setSaving]       = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [toast, setToast]         = useState<Toast | null>(null)
+  const fileRef                   = useRef<HTMLInputElement>(null)
 
   function showToast(t: Toast) {
     setToast(t)
@@ -61,7 +65,32 @@ export default function ComptePage() {
     finally { setSaving(false) }
   }
 
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { showToast({ type: 'err', msg: 'La photo ne doit pas dépasser 5 Mo.' }); return }
+    setUploading(true)
+    try {
+      const fd = new FormData(); fd.append('photo', file)
+      const updated = await apiUpload<Me>('/auth/photo/', fd)
+      setMe(updated)
+      showToast({ type: 'ok', msg: 'Photo mise à jour.' })
+    } catch { showToast({ type: 'err', msg: "Erreur lors du téléversement." }) }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
+  }
+
+  async function removePhoto() {
+    setUploading(true)
+    try {
+      const updated = await apiFetch<Me>('/auth/photo/', { method: 'DELETE' })
+      setMe(updated)
+      showToast({ type: 'ok', msg: 'Photo supprimée.' })
+    } catch { showToast({ type: 'err', msg: 'Erreur lors de la suppression.' }) }
+    finally { setUploading(false) }
+  }
+
   const initials = me ? (me.nom || me.login).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'
+  const photoUrl = me?.photo ? (me.photo.startsWith('http') ? me.photo : `${MEDIA_BASE}${me.photo}`) : null
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
@@ -82,13 +111,26 @@ export default function ComptePage() {
           display: flex; align-items: center; gap: 1.5rem;
           border-bottom: 1px solid #f8fafc;
         }
+        .cp-avatar-btn {
+          position: relative; width: 72px; height: 72px; border-radius: 50%;
+          flex-shrink: 0; cursor: pointer; border: none; padding: 0; background: none;
+        }
         .cp-avatar {
-          width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+          width: 72px; height: 72px; border-radius: 50%;
           background: linear-gradient(135deg, #0E3358 0%, #1AAFE6 100%);
           display: flex; align-items: center; justify-content: center;
           font-size: 1.5rem; font-weight: 800; color: #fff;
           box-shadow: 0 4px 16px rgba(26,175,230,0.3);
+          overflow: hidden; object-fit: cover;
         }
+        .cp-avatar-overlay {
+          position: absolute; inset: 0; border-radius: 50%;
+          background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+          opacity: 0; transition: opacity 0.2s;
+        }
+        .cp-avatar-btn:hover .cp-avatar-overlay { opacity: 1; }
+        .cp-avatar-btn:disabled { cursor: default; }
+        .cp-avatar-btn:disabled .cp-avatar-overlay { opacity: uploading ? 0.6 : 0; }
         .cp-name { font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
         .cp-login { font-size: 0.8125rem; color: #94a3b8; margin-top: 2px; }
         .cp-role-pill {
@@ -189,7 +231,24 @@ export default function ComptePage() {
       <div className="cp-card" style={{ marginBottom: '1rem' }}>
         {/* Avatar + identity */}
         <div className="cp-avatar-wrap">
-          <div className="cp-avatar">{initials}</div>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <button className="cp-avatar-btn" disabled={uploading} onClick={() => fileRef.current?.click()} title="Changer la photo">
+              {photoUrl
+                ? <img src={photoUrl} alt="Photo de profil" className="cp-avatar" style={{ width: 72, height: 72, objectFit: 'cover' }} />
+                : <div className="cp-avatar">{uploading ? '…' : initials}</div>
+              }
+              <div className="cp-avatar-overlay">
+                <Camera size={18} color="#fff" />
+              </div>
+            </button>
+            {photoUrl && (
+              <button onClick={removePhoto} disabled={uploading}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, padding: '2px 6px' }}>
+                <Trash2 size={11} /> Supprimer
+              </button>
+            )}
+          </div>
           <div>
             <div className="cp-name">{me?.nom || me?.login || '—'}</div>
             <div className="cp-login">@{me?.login}</div>

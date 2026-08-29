@@ -8,6 +8,7 @@ urlpatterns = [
     path('auth/refresh/', TokenRefreshView.as_view(),      name='token_refresh'),
     path('auth/me/',              views.MeView.as_view(),             name='me'),
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path('auth/photo/',           views.UploadPhotoView.as_view(),    name='upload-photo'),
 
     path('universities/',           views.UniversityListView.as_view(),       name='universities'),
     path('universities/<int:pk>/',  views.UniversityDetailView.as_view(),     name='university-detail'),

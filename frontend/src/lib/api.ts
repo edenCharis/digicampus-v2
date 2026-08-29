@@ -64,6 +64,28 @@ export async function apiFetch<T>(
   return res.json()
 }
 
+export async function apiUpload<T>(path: string, formData: FormData, method = 'POST'): Promise<T> {
+  const tokens = getTokens()
+  const headers: Record<string, string> = {}
+  if (tokens?.access) headers['Authorization'] = `Bearer ${tokens.access}`
+
+  let res = await fetch(`${API_BASE}${path}`, { method, headers, body: formData })
+
+  if (res.status === 401 && tokens?.refresh) {
+    const newAccess = await refreshAccess()
+    if (newAccess) {
+      headers['Authorization'] = `Bearer ${newAccess}`
+      res = await fetch(`${API_BASE}${path}`, { method, headers, body: formData })
+    }
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw err
+  }
+  return res.json()
+}
+
 export async function login(credentials: { login: string; password: string }) {
   const data = await apiFetch<{ access: string; refresh: string; user: unknown }>(
     '/auth/login/',

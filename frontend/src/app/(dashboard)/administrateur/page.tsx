@@ -1,92 +1,116 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import {
-  Building2, GraduationCap, Users, Settings,
-  Plus, Pencil, Trash2, CheckCircle, XCircle, ChevronDown,
-} from 'lucide-react'
+import { Building2, GraduationCap, Users, Settings, Plus, Pencil, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { SelectNative } from '@/components/ui/select-native'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 
 /* ── Types ── */
-interface University  { id: number; code: string; libelle: string; email_contact: string; tel_contact: string; ville: string }
+interface University    { id: number; code: string; libelle: string; email_contact: string; tel_contact: string; ville: string }
 interface Etablissement { id: number; code: string; libelle: string; university: number; university_name: string; email: string; tel: string; ville: string }
-interface AppUser { id: number; login: string; nom: string; email: string; role: string; university: number; etablissement: number | null; etablissement_name: string | null; is_active: boolean }
-interface Annee { id: number; libelle: string; is_active: boolean; etablissement: number }
-interface Cycle { id: number; code: string; libelle: string; etablissement: number }
-interface Specialite { id: number; code: string; libelle: string; cycle: number | null; cycle_libelle: string | null; etablissement: number }
-interface ApiList<T> { count: number; results: T[] }
+interface AppUser       { id: number; login: string; nom: string; email: string; role: string; university: number; etablissement: number | null; etablissement_name: string | null; is_active: boolean }
+interface Annee         { id: number; libelle: string; is_active: boolean; etablissement: number }
+interface Cycle         { id: number; code: string; libelle: string; etablissement: number }
+interface Specialite    { id: number; code: string; libelle: string; cycle: number | null; cycle_libelle: string | null; etablissement: number }
+interface ApiList<T>    { count: number; results: T[] }
 
-/* ── Constantes ── */
-const ROLES = [
-  'scolarité','doyen','enseignant','professeur','cours',
-  'inscription','anonymat','daarhspe','gesnote','soutenance','suivi','caisse','pvd',
-]
+const ROLES = ['scolarité','doyen','enseignant','professeur','cours','inscription','anonymat','daarhspe','gesnote','soutenance','suivi','caisse','pvd']
 const ROLE_COLORS: Record<string, string> = {
-  'scolarité': '#1AAFE6', doyen: '#8b5cf6', enseignant: '#f59e0b',
-  professeur: '#10b981', cours: '#06b6d4', inscription: '#3b82f6',
-  anonymat: '#6366f1', daarhspe: '#ec4899', gesnote: '#14b8a6',
-  soutenance: '#f97316', suivi: '#84cc16', caisse: '#eab308', pvd: '#a78bfa',
+  'scolarité':'#1AAFE6', doyen:'#8b5cf6', enseignant:'#f59e0b', professeur:'#10b981',
+  cours:'#06b6d4', inscription:'#3b82f6', anonymat:'#6366f1', daarhspe:'#ec4899',
+  gesnote:'#14b8a6', soutenance:'#f97316', suivi:'#84cc16', caisse:'#eab308', pvd:'#a78bfa',
 }
 
-/* ── Styles ── */
-const S: Record<string, React.CSSProperties> = {
-  tabs:      { display: 'flex', gap: 0, borderBottom: '2px solid #e2e8f0', marginBottom: '1.75rem' },
-  tab:       { padding: '0.625rem 1.25rem', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#64748b', borderBottom: '2px solid transparent', marginBottom: '-2px' },
-  tabActive: { padding: '0.625rem 1.25rem', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, color: '#1AAFE6', borderBottom: '2px solid #1AAFE6', marginBottom: '-2px' },
-  hdr:       { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' },
-  h2:        { fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 },
-  btnPrimary:{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.45rem 1rem', background: '#1AAFE6', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' },
-  card:      { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', marginBottom: '1rem' },
-  cardRow:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1.125rem', borderBottom: '1px solid #f1f5f9' },
-  cardRowLast:{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1.125rem' },
-  rowMain:   { fontWeight: 600, color: '#1e293b', fontSize: '0.9rem' },
-  rowSub:    { fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 },
-  iconBtn:   { background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center' },
-  iconBtns:  { display: 'flex', gap: 4 },
-  empty:     { padding: '2.5rem', textAlign: 'center' as const, color: '#94a3b8', fontSize: '0.875rem' },
-  // Modal
-  overlay:   { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
-  modal:     { background: '#fff', borderRadius: 16, padding: '1.75rem', width: '100%', maxWidth: 480 },
-  mTitle:    { fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1.25rem' },
-  fg:        { marginBottom: '1rem' },
-  label:     { display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#475569', marginBottom: 5 },
-  input:     { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' as const },
-  fSelect:   { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', outline: 'none', background: '#fff', boxSizing: 'border-box' as const },
-  row2:      { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' },
-  actions:   { display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.25rem' },
-  btnCancel: { padding: '0.45rem 1rem', background: '#f1f5f9', border: 'none', borderRadius: 8, color: '#64748b', fontSize: '0.875rem', cursor: 'pointer' },
-  errBox:    { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '0.5rem 0.75rem', color: '#dc2626', fontSize: '0.85rem', marginBottom: '0.875rem' },
-  badge:     { display: 'inline-flex', alignItems: 'center', padding: '0.18rem 0.55rem', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700 },
-}
-
-/* ── Helpers ── */
-function roleBadge(role: string) {
-  const color = ROLE_COLORS[role] ?? '#64748b'
-  return <span style={{ ...S.badge, background: `${color}18`, color }}>{role}</span>
-}
-
-function Confirm({ msg, onYes, onNo }: { msg: string; onYes: () => void; onNo: () => void }) {
+/* ── Shared sub-components ── */
+function ErrBox({ msg }: { msg: string }) {
   return (
-    <div style={S.overlay}>
-      <div style={{ ...S.modal, maxWidth: 360 }}>
-        <p style={{ color: '#1e293b', fontWeight: 600, margin: '0 0 1rem' }}>{msg}</p>
-        <div style={S.actions}>
-          <button style={S.btnCancel} onClick={onNo}>Annuler</button>
-          <button style={{ ...S.btnPrimary, background: '#ef4444' }} onClick={onYes}>Supprimer</button>
+    <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700 mb-4">
+      <AlertTriangle size={15} className="shrink-0" /> {msg}
+    </div>
+  )
+}
+
+function ConfirmDialog({ open, msg, onYes, onNo }: { open: boolean; msg: string; onYes: () => void; onNo: () => void }) {
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onNo()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+              <Trash2 size={18} className="text-red-500" />
+            </div>
+            <DialogTitle>Confirmation</DialogTitle>
+          </div>
+          <DialogDescription>{msg}</DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2 mt-2">
+          <Button variant="outline" size="sm" onClick={onNo}>Annuler</Button>
+          <Button variant="danger" size="sm" onClick={onYes}>Supprimer</Button>
         </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function FormRow({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('grid grid-cols-2 gap-3', className)}>{children}</div>
+}
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════
+   TAB SHARED: List row
+══════════════════════════════════════════ */
+function ListRow({ icon: Icon, iconColor, iconBg, primary, secondary, onEdit, onDelete, isLast }: {
+  icon: React.ElementType; iconColor: string; iconBg: string
+  primary: string; secondary?: string
+  onEdit: () => void; onDelete: () => void; isLast: boolean
+}) {
+  return (
+    <div className={cn('flex items-center gap-3 px-4 py-3.5', !isLast && 'border-b border-slate-50')}>
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: iconBg }}>
+        <Icon size={17} style={{ color: iconColor }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-slate-800 text-sm truncate">{primary}</div>
+        {secondary && <div className="text-xs text-slate-400 mt-0.5 truncate">{secondary}</div>}
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <button onClick={onEdit} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+          <Pencil size={14} />
+        </button>
+        <button onClick={onDelete} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+          <Trash2 size={14} />
+        </button>
       </div>
     </div>
   )
 }
 
-/* ════════════════════════════════════════
-   ONGLET 1 — UNIVERSITÉS
-════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   TAB 1 — UNIVERSITÉS
+══════════════════════════════════════════ */
 function TabUniversites() {
   const [list, setList] = useState<University[]>([])
-  const [modal, setModal] = useState<University | null | 'new'>(null)
-  const [del, setDel] = useState<University | null>(null)
-  const [form, setForm] = useState({ code: '', libelle: '', email_contact: '', tel_contact: '', ville: '' })
-  const [err, setErr] = useState<string | null>(null)
+  const [open, setOpen]   = useState(false)
+  const [editing, setEditing] = useState<University | null>(null)
+  const [del, setDel]     = useState<University | null>(null)
+  const [form, setForm]   = useState({ code: '', libelle: '', email_contact: '', tel_contact: '', ville: '' })
+  const [err, setErr]     = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
@@ -94,18 +118,16 @@ function TabUniversites() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  function openNew() { setForm({ code: '', libelle: '', email_contact: '', tel_contact: '', ville: '' }); setErr(null); setModal('new') }
-  function openEdit(u: University) { setForm({ code: u.code, libelle: u.libelle, email_contact: u.email_contact, tel_contact: u.tel_contact, ville: u.ville }); setErr(null); setModal(u) }
+  function openNew() { setEditing(null); setForm({ code: '', libelle: '', email_contact: '', tel_contact: '', ville: '' }); setErr(null); setOpen(true) }
+  function openEdit(u: University) { setEditing(u); setForm({ code: u.code, libelle: u.libelle, email_contact: u.email_contact, tel_contact: u.tel_contact, ville: u.ville }); setErr(null); setOpen(true) }
 
   async function save() {
     setSaving(true); setErr(null)
     try {
-      if (modal === 'new') await apiFetch('/universities/', { method: 'POST', body: JSON.stringify(form) })
-      else await apiFetch(`/universities/${(modal as University).id}/`, { method: 'PATCH', body: JSON.stringify(form) })
-      setModal(null); load()
-    } catch (e: unknown) {
-      setErr(JSON.stringify(e))
-    } finally { setSaving(false) }
+      if (!editing) await apiFetch('/universities/', { method: 'POST', body: JSON.stringify(form) })
+      else await apiFetch(`/universities/${editing.id}/`, { method: 'PATCH', body: JSON.stringify(form) })
+      setOpen(false); load()
+    } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
 
   async function doDelete() {
@@ -115,74 +137,72 @@ function TabUniversites() {
   }
 
   return (
-    <div>
-      <div style={S.hdr}>
-        <h2 style={S.h2}>Universités <span style={{ color: '#94a3b8', fontWeight: 400 }}>({list.length})</span></h2>
-        <button style={S.btnPrimary} onClick={openNew}><Plus size={14} /> Nouvelle université</button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-500">{list.length} université{list.length > 1 ? 's' : ''} enregistrée{list.length > 1 ? 's' : ''}</p>
+        <Button size="sm" onClick={openNew}><Plus size={14} /> Nouvelle université</Button>
       </div>
 
-      <div style={S.card}>
-        {list.length === 0 ? <div style={S.empty}>Aucune université enregistrée.</div>
+      <Card>
+        {list.length === 0
+          ? <div className="py-12 text-center text-slate-400 text-sm">Aucune université enregistrée.</div>
           : list.map((u, i) => (
-            <div key={u.id} style={i === list.length - 1 ? S.cardRowLast : S.cardRow}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(26,175,230,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={18} color="#1AAFE6" />
-                </div>
-                <div>
-                  <div style={S.rowMain}>{u.libelle}</div>
-                  <div style={S.rowSub}>{u.code} · {u.ville}</div>
-                </div>
-              </div>
-              <div style={S.iconBtns}>
-                <button style={S.iconBtn} onClick={() => openEdit(u)} title="Modifier"><Pencil size={15} color="#64748b" /></button>
-                <button style={S.iconBtn} onClick={() => setDel(u)} title="Supprimer"><Trash2 size={15} color="#ef4444" /></button>
-              </div>
-            </div>
+            <ListRow key={u.id} icon={Building2} iconColor="#1AAFE6" iconBg="rgba(26,175,230,0.08)"
+              primary={u.libelle} secondary={`${u.code} · ${u.ville}`}
+              onEdit={() => openEdit(u)} onDelete={() => setDel(u)} isLast={i === list.length - 1}
+            />
           ))}
-      </div>
+      </Card>
 
-      {modal && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3 style={S.mTitle}>{modal === 'new' ? 'Nouvelle université' : 'Modifier l\'université'}</h3>
-            {err && <div style={S.errBox}>{err}</div>}
-            <div style={S.row2}>
-              <div style={S.fg}><label style={S.label}>Code *</label><input style={S.input} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="UDSN" /></div>
-              <div style={S.fg}><label style={S.label}>Ville</label><input style={S.input} value={form.ville} onChange={e => setForm(f => ({ ...f, ville: e.target.value }))} placeholder="Brazzaville" /></div>
-            </div>
-            <div style={S.fg}><label style={S.label}>Libellé *</label><input style={S.input} value={form.libelle} onChange={e => setForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Université Denis Sassou N'Guesso" /></div>
-            <div style={S.row2}>
-              <div style={S.fg}><label style={S.label}>Email</label><input style={S.input} value={form.email_contact} onChange={e => setForm(f => ({ ...f, email_contact: e.target.value }))} /></div>
-              <div style={S.fg}><label style={S.label}>Téléphone</label><input style={S.input} value={form.tel_contact} onChange={e => setForm(f => ({ ...f, tel_contact: e.target.value }))} /></div>
-            </div>
-            <div style={S.actions}>
-              <button style={S.btnCancel} onClick={() => setModal(null)}>Annuler</button>
-              <button style={{ ...S.btnPrimary, opacity: saving ? 0.7 : 1 }} onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
-            </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Modifier l\'université' : 'Nouvelle université'}</DialogTitle>
+            <DialogDescription>Renseignez les informations de l'université.</DialogDescription>
+          </DialogHeader>
+          {err && <ErrBox msg={err} />}
+          <div className="space-y-3">
+            <FormRow>
+              <Field label="Code" required><Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="UDSN" /></Field>
+              <Field label="Ville"><Input value={form.ville} onChange={e => setForm(f => ({ ...f, ville: e.target.value }))} placeholder="Brazzaville" /></Field>
+            </FormRow>
+            <Field label="Libellé" required><Input value={form.libelle} onChange={e => setForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Université Denis Sassou N'Guesso" /></Field>
+            <FormRow>
+              <Field label="Email"><Input type="email" value={form.email_contact} onChange={e => setForm(f => ({ ...f, email_contact: e.target.value }))} /></Field>
+              <Field label="Téléphone"><Input value={form.tel_contact} onChange={e => setForm(f => ({ ...f, tel_contact: e.target.value }))} /></Field>
+            </FormRow>
           </div>
-        </div>
-      )}
-      {del && <Confirm msg={`Supprimer l'université "${del.libelle}" ?`} onYes={doDelete} onNo={() => setDel(null)} />}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Annuler</Button>
+            <Button size="sm" onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog open={!!del} msg={`Supprimer l'université "${del?.libelle}" ?`} onYes={doDelete} onNo={() => setDel(null)} />
     </div>
   )
 }
 
-/* ════════════════════════════════════════
-   ONGLET 2 — ÉTABLISSEMENTS
-════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   TAB 2 — ÉTABLISSEMENTS
+══════════════════════════════════════════ */
 function TabEtablissements() {
-  const [univs, setUnivs] = useState<University[]>([])
-  const [list, setList] = useState<Etablissement[]>([])
+  const [univs, setUnivs]     = useState<University[]>([])
+  const [list, setList]       = useState<Etablissement[]>([])
   const [filterUniv, setFilterUniv] = useState('')
-  const [modal, setModal] = useState<Etablissement | null | 'new'>(null)
-  const [del, setDel] = useState<Etablissement | null>(null)
-  const [form, setForm] = useState({ code: '', libelle: '', university: '', email: '', tel: '', ville: '' })
-  const [err, setErr] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [open, setOpen]       = useState(false)
+  const [editing, setEditing] = useState<Etablissement | null>(null)
+  const [del, setDel]         = useState<Etablissement | null>(null)
+  const [form, setForm]       = useState({ code: '', libelle: '', university: '', email: '', tel: '', ville: '' })
+  const [err, setErr]         = useState<string | null>(null)
+  const [saving, setSaving]   = useState(false)
 
   useEffect(() => {
-    apiFetch<ApiList<University>>('/universities/').then(d => { setUnivs(d.results); if (d.results[0]) setFilterUniv(String(d.results[0].id)) }).catch(() => {})
+    apiFetch<ApiList<University>>('/universities/').then(d => {
+      setUnivs(d.results)
+      if (d.results[0]) setFilterUniv(String(d.results[0].id))
+    }).catch(() => {})
   }, [])
 
   const load = useCallback(() => {
@@ -191,16 +211,16 @@ function TabEtablissements() {
   }, [filterUniv])
   useEffect(() => { load() }, [load])
 
-  function openNew() { setForm({ code: '', libelle: '', university: filterUniv, email: '', tel: '', ville: '' }); setErr(null); setModal('new') }
-  function openEdit(e: Etablissement) { setForm({ code: e.code, libelle: e.libelle, university: String(e.university), email: e.email, tel: e.tel, ville: e.ville }); setErr(null); setModal(e) }
+  function openNew() { setEditing(null); setForm({ code: '', libelle: '', university: filterUniv, email: '', tel: '', ville: '' }); setErr(null); setOpen(true) }
+  function openEdit(e: Etablissement) { setEditing(e); setForm({ code: e.code, libelle: e.libelle, university: String(e.university), email: e.email, tel: e.tel, ville: e.ville }); setErr(null); setOpen(true) }
 
   async function save() {
     setSaving(true); setErr(null)
     try {
       const body = { ...form, university: Number(form.university) }
-      if (modal === 'new') await apiFetch('/etablissements/', { method: 'POST', body: JSON.stringify(body) })
-      else await apiFetch(`/etablissements/${(modal as Etablissement).id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      setModal(null); load()
+      if (!editing) await apiFetch('/etablissements/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/etablissements/${editing.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setOpen(false); load()
     } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
 
@@ -211,85 +231,78 @@ function TabEtablissements() {
   }
 
   return (
-    <div>
-      <div style={S.hdr}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h2 style={S.h2}>Établissements <span style={{ color: '#94a3b8', fontWeight: 400 }}>({list.length})</span></h2>
-          <select style={{ padding: '0.4rem 0.65rem', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.85rem', outline: 'none', background: '#fff' }}
-            value={filterUniv} onChange={e => setFilterUniv(e.target.value)}>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-slate-500">{list.length} établissement{list.length > 1 ? 's' : ''}</p>
+          <SelectNative className="w-auto text-xs" value={filterUniv} onChange={e => setFilterUniv(e.target.value)}>
             <option value="">Toutes les universités</option>
             {univs.map(u => <option key={u.id} value={u.id}>{u.code}</option>)}
-          </select>
+          </SelectNative>
         </div>
-        <button style={S.btnPrimary} onClick={openNew}><Plus size={14} /> Nouvel établissement</button>
+        <Button size="sm" onClick={openNew}><Plus size={14} /> Nouvel établissement</Button>
       </div>
 
-      <div style={S.card}>
-        {list.length === 0 ? <div style={S.empty}>Aucun établissement trouvé.</div>
+      <Card>
+        {list.length === 0
+          ? <div className="py-12 text-center text-slate-400 text-sm">Aucun établissement trouvé.</div>
           : list.map((e, i) => (
-            <div key={e.id} style={i === list.length - 1 ? S.cardRowLast : S.cardRow}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <GraduationCap size={18} color="#8b5cf6" />
-                </div>
-                <div>
-                  <div style={S.rowMain}>{e.libelle}</div>
-                  <div style={S.rowSub}>{e.code} · {e.university_name} · {e.ville}</div>
-                </div>
-              </div>
-              <div style={S.iconBtns}>
-                <button style={S.iconBtn} onClick={() => openEdit(e)}><Pencil size={15} color="#64748b" /></button>
-                <button style={S.iconBtn} onClick={() => setDel(e)}><Trash2 size={15} color="#ef4444" /></button>
-              </div>
-            </div>
+            <ListRow key={e.id} icon={GraduationCap} iconColor="#8b5cf6" iconBg="rgba(139,92,246,0.08)"
+              primary={e.libelle} secondary={`${e.code} · ${e.university_name} · ${e.ville}`}
+              onEdit={() => openEdit(e)} onDelete={() => setDel(e)} isLast={i === list.length - 1}
+            />
           ))}
-      </div>
+      </Card>
 
-      {modal && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3 style={S.mTitle}>{modal === 'new' ? 'Nouvel établissement' : 'Modifier l\'établissement'}</h3>
-            {err && <div style={S.errBox}>{err}</div>}
-            <div style={S.fg}>
-              <label style={S.label}>Université *</label>
-              <select style={S.fSelect} value={form.university} onChange={e => setForm(f => ({ ...f, university: e.target.value }))}>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Modifier l\'établissement' : 'Nouvel établissement'}</DialogTitle>
+            <DialogDescription>Renseignez les informations de la faculté ou école.</DialogDescription>
+          </DialogHeader>
+          {err && <ErrBox msg={err} />}
+          <div className="space-y-3">
+            <Field label="Université" required>
+              <SelectNative value={form.university} onChange={e => setForm(f => ({ ...f, university: e.target.value }))}>
                 <option value="">— sélectionner —</option>
                 {univs.map(u => <option key={u.id} value={u.id}>{u.libelle}</option>)}
-              </select>
-            </div>
-            <div style={S.row2}>
-              <div style={S.fg}><label style={S.label}>Code *</label><input style={S.input} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="FIT" /></div>
-              <div style={S.fg}><label style={S.label}>Ville</label><input style={S.input} value={form.ville} onChange={e => setForm(f => ({ ...f, ville: e.target.value }))} /></div>
-            </div>
-            <div style={S.fg}><label style={S.label}>Libellé *</label><input style={S.input} value={form.libelle} onChange={e => setForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Faculté des Sciences…" /></div>
-            <div style={S.row2}>
-              <div style={S.fg}><label style={S.label}>Email</label><input style={S.input} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-              <div style={S.fg}><label style={S.label}>Téléphone</label><input style={S.input} value={form.tel} onChange={e => setForm(f => ({ ...f, tel: e.target.value }))} /></div>
-            </div>
-            <div style={S.actions}>
-              <button style={S.btnCancel} onClick={() => setModal(null)}>Annuler</button>
-              <button style={{ ...S.btnPrimary, opacity: saving ? 0.7 : 1 }} onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
-            </div>
+              </SelectNative>
+            </Field>
+            <FormRow>
+              <Field label="Code" required><Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="FIT" /></Field>
+              <Field label="Ville"><Input value={form.ville} onChange={e => setForm(f => ({ ...f, ville: e.target.value }))} /></Field>
+            </FormRow>
+            <Field label="Libellé" required><Input value={form.libelle} onChange={e => setForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Faculté des Sciences…" /></Field>
+            <FormRow>
+              <Field label="Email"><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></Field>
+              <Field label="Téléphone"><Input value={form.tel} onChange={e => setForm(f => ({ ...f, tel: e.target.value }))} /></Field>
+            </FormRow>
           </div>
-        </div>
-      )}
-      {del && <Confirm msg={`Supprimer "${del.libelle}" ?`} onYes={doDelete} onNo={() => setDel(null)} />}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Annuler</Button>
+            <Button size="sm" onClick={save} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog open={!!del} msg={`Supprimer "${del?.libelle}" ?`} onYes={doDelete} onNo={() => setDel(null)} />
     </div>
   )
 }
 
-/* ════════════════════════════════════════
-   ONGLET 3 — COMPTES
-════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   TAB 3 — COMPTES
+══════════════════════════════════════════ */
 function TabComptes() {
-  const [etabs, setEtabs] = useState<Etablissement[]>([])
-  const [list, setList] = useState<AppUser[]>([])
+  const [etabs, setEtabs]     = useState<Etablissement[]>([])
+  const [list, setList]       = useState<AppUser[]>([])
   const [filterRole, setFilterRole] = useState('')
-  const [modal, setModal] = useState<AppUser | null | 'new'>(null)
-  const [del, setDel] = useState<AppUser | null>(null)
-  const [form, setForm] = useState({ login: '', nom: '', email: '', role: '', password: '', etablissement: '', is_active: true })
-  const [err, setErr] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [open, setOpen]       = useState(false)
+  const [editing, setEditing] = useState<AppUser | null>(null)
+  const [del, setDel]         = useState<AppUser | null>(null)
+  const [form, setForm]       = useState({ login: '', nom: '', email: '', role: ROLES[0], password: '', etablissement: '', is_active: true })
+  const [err, setErr]         = useState<string | null>(null)
+  const [saving, setSaving]   = useState(false)
 
   const load = useCallback(() => {
     const q = filterRole ? `?role=${encodeURIComponent(filterRole)}` : ''
@@ -302,14 +315,16 @@ function TabComptes() {
   }, [load])
 
   function openNew() {
+    setEditing(null)
     const raw = localStorage.getItem('dc_user')
     const me = raw ? JSON.parse(raw) : {}
     setForm({ login: '', nom: '', email: '', role: ROLES[0], password: '', etablissement: String(me.etablissement ?? etabs[0]?.id ?? ''), is_active: true })
-    setErr(null); setModal('new')
+    setErr(null); setOpen(true)
   }
   function openEdit(u: AppUser) {
+    setEditing(u)
     setForm({ login: u.login, nom: u.nom, email: u.email ?? '', role: u.role, password: '', etablissement: String(u.etablissement ?? ''), is_active: u.is_active })
-    setErr(null); setModal(u)
+    setErr(null); setOpen(true)
   }
 
   async function save() {
@@ -317,16 +332,11 @@ function TabComptes() {
     try {
       const raw = localStorage.getItem('dc_user')
       const me = raw ? JSON.parse(raw) : {}
-      const body: Record<string, unknown> = {
-        login: form.login, nom: form.nom, email: form.email || undefined,
-        role: form.role, is_active: form.is_active,
-        university: me.university,
-        etablissement: form.etablissement ? Number(form.etablissement) : null,
-      }
+      const body: Record<string, unknown> = { login: form.login, nom: form.nom, email: form.email || undefined, role: form.role, is_active: form.is_active, university: me.university, etablissement: form.etablissement ? Number(form.etablissement) : null }
       if (form.password) body.password = form.password
-      if (modal === 'new') await apiFetch('/users/', { method: 'POST', body: JSON.stringify(body) })
-      else await apiFetch(`/users/${(modal as AppUser).id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      setModal(null); load()
+      if (!editing) await apiFetch('/users/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/users/${editing.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setOpen(false); load()
     } catch (e: unknown) {
       const err = e as Record<string, unknown>
       setErr(err?.login ? `Login : ${err.login}` : JSON.stringify(e))
@@ -339,7 +349,6 @@ function TabComptes() {
     setDel(null); load()
   }
 
-  // Grouper par rôle
   const grouped = ROLES.reduce<Record<string, AppUser[]>>((acc, r) => {
     const users = list.filter(u => u.role === r)
     if (users.length) acc[r] = users
@@ -347,109 +356,118 @@ function TabComptes() {
   }, {})
 
   return (
-    <div>
-      <div style={S.hdr}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h2 style={S.h2}>Comptes <span style={{ color: '#94a3b8', fontWeight: 400 }}>({list.length})</span></h2>
-          <select style={{ padding: '0.4rem 0.65rem', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.85rem', outline: 'none', background: '#fff' }}
-            value={filterRole} onChange={e => setFilterRole(e.target.value)}>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-slate-500">{list.length} compte{list.length > 1 ? 's' : ''}</p>
+          <SelectNative className="w-auto text-xs" value={filterRole} onChange={e => setFilterRole(e.target.value)}>
             <option value="">Tous les rôles</option>
             {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
+          </SelectNative>
         </div>
-        <button style={S.btnPrimary} onClick={openNew}><Plus size={14} /> Nouveau compte</button>
+        <Button size="sm" onClick={openNew}><Plus size={14} /> Nouveau compte</Button>
       </div>
 
-      {Object.entries(grouped).map(([role, users]) => (
-        <div key={role} style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.5rem' }}>
-            {roleBadge(role)}
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{users.length} compte{users.length > 1 ? 's' : ''}</span>
-          </div>
-          <div style={S.card}>
-            {users.map((u, i) => (
-              <div key={u.id} style={i === users.length - 1 ? S.cardRowLast : S.cardRow}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 50, background: `${ROLE_COLORS[role] ?? '#64748b'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: ROLE_COLORS[role] ?? '#64748b' }}>
-                    {u.nom.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ ...S.rowMain, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {u.nom}
-                      {!u.is_active && <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#ef4444', padding: '0.1rem 0.4rem', borderRadius: 20, fontWeight: 600 }}>Inactif</span>}
+      <div className="space-y-3">
+        {Object.entries(grouped).map(([role, users]) => {
+          const color = ROLE_COLORS[role] ?? '#64748b'
+          return (
+            <div key={role}>
+              <div className="flex items-center gap-2 mb-1.5 px-1">
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ background: `${color}18`, color }}>
+                  {role}
+                </span>
+                <span className="text-xs text-slate-400">{users.length}</span>
+              </div>
+              <Card>
+                {users.map((u, i) => (
+                  <div key={u.id} className={cn('flex items-center gap-3 px-4 py-3', i < users.length - 1 && 'border-b border-slate-50')}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: `${color}18`, color }}>
+                      {u.nom.charAt(0).toUpperCase()}
                     </div>
-                    <div style={S.rowSub}>{u.login} {u.etablissement_name ? `· ${u.etablissement_name}` : ''}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-800 text-sm">{u.nom}</span>
+                        {!u.is_active && <Badge variant="danger" className="text-[10px] py-0">Inactif</Badge>}
+                      </div>
+                      <div className="text-xs text-slate-400">{u.login}{u.etablissement_name ? ` · ${u.etablissement_name}` : ''}</div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"><Pencil size={13} /></button>
+                      <button onClick={() => setDel(u)} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><Trash2 size={13} /></button>
+                    </div>
                   </div>
-                </div>
-                <div style={S.iconBtns}>
-                  <button style={S.iconBtn} onClick={() => openEdit(u)}><Pencil size={15} color="#64748b" /></button>
-                  <button style={S.iconBtn} onClick={() => setDel(u)}><Trash2 size={15} color="#ef4444" /></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {list.length === 0 && <div style={{ ...S.empty, border: '1px solid #e2e8f0', borderRadius: 12 }}>Aucun compte trouvé.</div>}
-
-      {modal && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3 style={S.mTitle}>{modal === 'new' ? 'Nouveau compte' : 'Modifier le compte'}</h3>
-            {err && <div style={S.errBox}>{err}</div>}
-            <div style={S.row2}>
-              <div style={S.fg}><label style={S.label}>Login *</label><input style={S.input} value={form.login} onChange={e => setForm(f => ({ ...f, login: e.target.value }))} placeholder="scolarite" /></div>
-              <div style={S.fg}><label style={S.label}>Mot de passe {modal === 'new' ? '*' : '(laisser vide = inchangé)'}</label><input type="password" style={S.input} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" /></div>
+                ))}
+              </Card>
             </div>
-            <div style={S.fg}><label style={S.label}>Nom complet *</label><input style={S.input} value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} placeholder="Agent Scolarité" /></div>
-            <div style={S.row2}>
-              <div style={S.fg}>
-                <label style={S.label}>Rôle *</label>
-                <select style={S.fSelect} value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+          )
+        })}
+        {list.length === 0 && <Card><div className="py-12 text-center text-slate-400 text-sm">Aucun compte trouvé.</div></Card>}
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Modifier le compte' : 'Nouveau compte'}</DialogTitle>
+            <DialogDescription>Renseignez les informations du compte utilisateur.</DialogDescription>
+          </DialogHeader>
+          {err && <ErrBox msg={err} />}
+          <div className="space-y-3">
+            <FormRow>
+              <Field label="Login" required><Input value={form.login} onChange={e => setForm(f => ({ ...f, login: e.target.value }))} placeholder="scolarite" /></Field>
+              <Field label={editing ? 'Nouveau mot de passe' : 'Mot de passe *'}>
+                <Input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" />
+              </Field>
+            </FormRow>
+            <Field label="Nom complet" required><Input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} placeholder="Agent Scolarité" /></Field>
+            <FormRow>
+              <Field label="Rôle" required>
+                <SelectNative value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
                   {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <div style={S.fg}>
-                <label style={S.label}>Établissement</label>
-                <select style={S.fSelect} value={form.etablissement} onChange={e => setForm(f => ({ ...f, etablissement: e.target.value }))}>
+                </SelectNative>
+              </Field>
+              <Field label="Établissement">
+                <SelectNative value={form.etablissement} onChange={e => setForm(f => ({ ...f, etablissement: e.target.value }))}>
                   <option value="">— aucun —</option>
                   {etabs.map(e => <option key={e.id} value={e.id}>{e.code} — {e.libelle}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={S.fg}><label style={S.label}>Email</label><input type="email" style={S.input} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>
-              <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#1AAFE6' }} />
+                </SelectNative>
+              </Field>
+            </FormRow>
+            <Field label="Email"><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></Field>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+              <input type="checkbox" className="rounded accent-brand w-4 h-4" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
               Compte actif
             </label>
-            <div style={S.actions}>
-              <button style={S.btnCancel} onClick={() => setModal(null)}>Annuler</button>
-              <button style={{ ...S.btnPrimary, opacity: saving ? 0.7 : 1 }} onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
-            </div>
           </div>
-        </div>
-      )}
-      {del && <Confirm msg={`Supprimer le compte "${del.nom}" (${del.login}) ?`} onYes={doDelete} onNo={() => setDel(null)} />}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Annuler</Button>
+            <Button size="sm" onClick={save} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog open={!!del} msg={`Supprimer le compte "${del?.nom}" (${del?.login}) ?`} onYes={doDelete} onNo={() => setDel(null)} />
     </div>
   )
 }
 
-/* ════════════════════════════════════════
-   ONGLET 4 — PARAMÉTRAGE
-════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   TAB 4 — PARAMÉTRAGE
+══════════════════════════════════════════ */
 function TabParametrage() {
-  const [etabs, setEtabs]         = useState<Etablissement[]>([])
-  const [etabSel, setEtabSel]     = useState('')
-  const [annees, setAnnees]       = useState<Annee[]>([])
-  const [cycles, setCycles]       = useState<Cycle[]>([])
-  const [specs, setSpecs]         = useState<Specialite[]>([])
-  const [section, setSection]     = useState<'annees' | 'cycles' | 'specialites'>('annees')
+  const [etabs, setEtabs]     = useState<Etablissement[]>([])
+  const [etabSel, setEtabSel] = useState('')
+  const [annees, setAnnees]   = useState<Annee[]>([])
+  const [cycles, setCycles]   = useState<Cycle[]>([])
+  const [specs, setSpecs]     = useState<Specialite[]>([])
+  const [section, setSection] = useState<'annees'|'cycles'|'specialites'>('annees')
 
-  // Modals
-  const [anneeModal, setAnneeModal] = useState<Annee | 'new' | null>(null)
-  const [cycleModal, setCycleModal] = useState<Cycle | 'new' | null>(null)
-  const [specModal,  setSpecModal]  = useState<Specialite | 'new' | null>(null)
+  const [anneeOpen, setAnneeOpen]   = useState(false)
+  const [cycleOpen, setCycleOpen]   = useState(false)
+  const [specOpen,  setSpecOpen]    = useState(false)
+  const [editAnnee, setEditAnnee]   = useState<Annee | null>(null)
+  const [editCycle, setEditCycle]   = useState<Cycle | null>(null)
+  const [editSpec,  setEditSpec]    = useState<Specialite | null>(null)
   const [delTarget, setDelTarget]   = useState<{ type: string; id: number; label: string } | null>(null)
 
   const [anneeForm, setAnneeForm] = useState({ libelle: '', is_active: false })
@@ -477,9 +495,9 @@ function TabParametrage() {
     setSaving(true); setErr(null)
     try {
       const body = { ...anneeForm, etablissement: Number(etabSel) }
-      if (anneeModal === 'new') await apiFetch('/annees/', { method: 'POST', body: JSON.stringify(body) })
-      else await apiFetch(`/annees/${(anneeModal as Annee).id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      setAnneeModal(null); loadAll()
+      if (!editAnnee) await apiFetch('/annees/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/annees/${editAnnee.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setAnneeOpen(false); loadAll()
     } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
 
@@ -487,9 +505,9 @@ function TabParametrage() {
     setSaving(true); setErr(null)
     try {
       const body = { ...cycleForm, etablissement: Number(etabSel) }
-      if (cycleModal === 'new') await apiFetch('/cycles/', { method: 'POST', body: JSON.stringify(body) })
-      else await apiFetch(`/cycles/${(cycleModal as Cycle).id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      setCycleModal(null); loadAll()
+      if (!editCycle) await apiFetch('/cycles/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/cycles/${editCycle.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setCycleOpen(false); loadAll()
     } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
 
@@ -497,9 +515,9 @@ function TabParametrage() {
     setSaving(true); setErr(null)
     try {
       const body = { ...specForm, cycle: specForm.cycle ? Number(specForm.cycle) : null, etablissement: Number(etabSel) }
-      if (specModal === 'new') await apiFetch('/specialites/', { method: 'POST', body: JSON.stringify(body) })
-      else await apiFetch(`/specialites/${(specModal as Specialite).id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      setSpecModal(null); loadAll()
+      if (!editSpec) await apiFetch('/specialites/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/specialites/${editSpec.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setSpecOpen(false); loadAll()
     } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
 
@@ -510,212 +528,198 @@ function TabParametrage() {
     setDelTarget(null); loadAll()
   }
 
+  const sections = [
+    { id: 'annees' as const, label: 'Années académiques', count: annees.length },
+    { id: 'cycles' as const, label: 'Cycles', count: cycles.length },
+    { id: 'specialites' as const, label: 'Spécialités', count: specs.length },
+  ]
+
   return (
-    <div>
-      {/* Sélecteur établissement */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <h2 style={S.h2}>Paramétrage académique</h2>
-        <select style={{ padding: '0.4rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.875rem', outline: 'none', background: '#fff' }}
-          value={etabSel} onChange={e => setEtabSel(e.target.value)}>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 flex-wrap">
+        <p className="text-sm font-medium text-slate-700">Établissement :</p>
+        <SelectNative className="w-auto" value={etabSel} onChange={e => setEtabSel(e.target.value)}>
           {etabs.map(e => <option key={e.id} value={e.id}>{e.code} — {e.libelle}</option>)}
-        </select>
+        </SelectNative>
       </div>
 
-      {/* Sous-sections */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
-        {(['annees', 'cycles', 'specialites'] as const).map(s => {
-          const labels = { annees: 'Années académiques', cycles: 'Cycles', specialites: 'Spécialités' }
-          return (
-            <button key={s} onClick={() => setSection(s)} style={{
-              padding: '0.4rem 0.875rem', border: '1px solid', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-              background: section === s ? '#1AAFE6' : '#fff',
-              color: section === s ? '#fff' : '#64748b',
-              borderColor: section === s ? '#1AAFE6' : '#e2e8f0',
-            }}>{labels[s]}</button>
-          )
-        })}
+      {/* Section tabs */}
+      <div className="flex gap-2">
+        {sections.map(s => (
+          <button key={s.id} onClick={() => setSection(s.id)}
+            className={cn('flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors border', section === s.id ? 'bg-brand text-white border-brand shadow-sm shadow-brand/20' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300')}
+          >
+            {s.label}
+            <span className={cn('text-xs rounded-full px-1.5 py-0.5 font-semibold', section === s.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500')}>{s.count}</span>
+          </button>
+        ))}
       </div>
 
       {/* ── Années ── */}
       {section === 'annees' && (
-        <div>
-          <div style={S.hdr}>
-            <span style={{ color: '#64748b', fontSize: '0.875rem' }}>{annees.length} année{annees.length > 1 ? 's' : ''}</span>
-            <button style={S.btnPrimary} onClick={() => { setAnneeForm({ libelle: '', is_active: false }); setErr(null); setAnneeModal('new') }}>
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => { setEditAnnee(null); setAnneeForm({ libelle: '', is_active: false }); setErr(null); setAnneeOpen(true) }}>
               <Plus size={14} /> Nouvelle année
-            </button>
+            </Button>
           </div>
-          <div style={S.card}>
-            {annees.length === 0 ? <div style={S.empty}>Aucune année académique.</div>
+          <Card>
+            {annees.length === 0 ? <div className="py-10 text-center text-slate-400 text-sm">Aucune année académique.</div>
               : annees.map((a, i) => (
-                <div key={a.id} style={i === annees.length - 1 ? S.cardRowLast : S.cardRow}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{a.libelle}</span>
-                    {a.is_active && <span style={{ ...S.badge, background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>Active</span>}
+                <div key={a.id} className={cn('flex items-center gap-3 px-4 py-3.5', i < annees.length - 1 && 'border-b border-slate-50')}>
+                  <div className="flex-1 flex items-center gap-3">
+                    <span className="font-bold text-slate-800">{a.libelle}</span>
+                    {a.is_active && (
+                      <Badge variant="success" className="gap-1">
+                        <CheckCircle2 size={10} /> Active
+                      </Badge>
+                    )}
                   </div>
-                  <div style={S.iconBtns}>
-                    <button style={S.iconBtn} onClick={() => { setAnneeForm({ libelle: a.libelle, is_active: a.is_active }); setErr(null); setAnneeModal(a) }}><Pencil size={15} color="#64748b" /></button>
-                    <button style={S.iconBtn} onClick={() => setDelTarget({ type: 'annee', id: a.id, label: a.libelle })}><Trash2 size={15} color="#ef4444" /></button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => { setEditAnnee(a); setAnneeForm({ libelle: a.libelle, is_active: a.is_active }); setErr(null); setAnneeOpen(true) }} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"><Pencil size={14} /></button>
+                    <button onClick={() => setDelTarget({ type: 'annee', id: a.id, label: a.libelle })} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}
-          </div>
+          </Card>
         </div>
       )}
 
       {/* ── Cycles ── */}
       {section === 'cycles' && (
-        <div>
-          <div style={S.hdr}>
-            <span style={{ color: '#64748b', fontSize: '0.875rem' }}>{cycles.length} cycle{cycles.length > 1 ? 's' : ''}</span>
-            <button style={S.btnPrimary} onClick={() => { setCycleForm({ code: '', libelle: '' }); setErr(null); setCycleModal('new') }}>
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => { setEditCycle(null); setCycleForm({ code: '', libelle: '' }); setErr(null); setCycleOpen(true) }}>
               <Plus size={14} /> Nouveau cycle
-            </button>
+            </Button>
           </div>
-          <div style={S.card}>
-            {cycles.length === 0 ? <div style={S.empty}>Aucun cycle.</div>
+          <Card>
+            {cycles.length === 0 ? <div className="py-10 text-center text-slate-400 text-sm">Aucun cycle.</div>
               : cycles.map((c, i) => (
-                <div key={c.id} style={i === cycles.length - 1 ? S.cardRowLast : S.cardRow}>
-                  <div>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{c.libelle}</span>
-                    <span style={{ marginLeft: 8, fontSize: '0.75rem', color: '#94a3b8' }}>{c.code}</span>
+                <div key={c.id} className={cn('flex items-center gap-3 px-4 py-3.5', i < cycles.length - 1 && 'border-b border-slate-50')}>
+                  <div className="flex-1">
+                    <span className="font-semibold text-slate-800">{c.libelle}</span>
+                    <span className="ml-2 text-xs text-slate-400">{c.code}</span>
                   </div>
-                  <div style={S.iconBtns}>
-                    <button style={S.iconBtn} onClick={() => { setCycleForm({ code: c.code, libelle: c.libelle }); setErr(null); setCycleModal(c) }}><Pencil size={15} color="#64748b" /></button>
-                    <button style={S.iconBtn} onClick={() => setDelTarget({ type: 'cycle', id: c.id, label: c.libelle })}><Trash2 size={15} color="#ef4444" /></button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => { setEditCycle(c); setCycleForm({ code: c.code, libelle: c.libelle }); setErr(null); setCycleOpen(true) }} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"><Pencil size={14} /></button>
+                    <button onClick={() => setDelTarget({ type: 'cycle', id: c.id, label: c.libelle })} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}
-          </div>
+          </Card>
         </div>
       )}
 
       {/* ── Spécialités ── */}
       {section === 'specialites' && (
-        <div>
-          <div style={S.hdr}>
-            <span style={{ color: '#64748b', fontSize: '0.875rem' }}>{specs.length} spécialité{specs.length > 1 ? 's' : ''}</span>
-            <button style={S.btnPrimary} onClick={() => { setSpecForm({ code: '', libelle: '', cycle: cycles[0] ? String(cycles[0].id) : '' }); setErr(null); setSpecModal('new') }}>
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => { setEditSpec(null); setSpecForm({ code: '', libelle: '', cycle: cycles[0] ? String(cycles[0].id) : '' }); setErr(null); setSpecOpen(true) }}>
               <Plus size={14} /> Nouvelle spécialité
-            </button>
+            </Button>
           </div>
-          <div style={S.card}>
-            {specs.length === 0 ? <div style={S.empty}>Aucune spécialité.</div>
+          <Card>
+            {specs.length === 0 ? <div className="py-10 text-center text-slate-400 text-sm">Aucune spécialité.</div>
               : specs.map((s, i) => (
-                <div key={s.id} style={i === specs.length - 1 ? S.cardRowLast : S.cardRow}>
-                  <div>
-                    <div style={{ fontWeight: 600, color: '#1e293b' }}>{s.libelle}</div>
-                    <div style={S.rowSub}>{s.code}{s.cycle_libelle ? ` · ${s.cycle_libelle}` : ''}</div>
+                <div key={s.id} className={cn('flex items-center gap-3 px-4 py-3.5', i < specs.length - 1 && 'border-b border-slate-50')}>
+                  <div className="flex-1">
+                    <div className="font-semibold text-slate-800">{s.libelle}</div>
+                    <div className="text-xs text-slate-400">{s.code}{s.cycle_libelle ? ` · ${s.cycle_libelle}` : ''}</div>
                   </div>
-                  <div style={S.iconBtns}>
-                    <button style={S.iconBtn} onClick={() => { setSpecForm({ code: s.code, libelle: s.libelle, cycle: s.cycle ? String(s.cycle) : '' }); setErr(null); setSpecModal(s) }}><Pencil size={15} color="#64748b" /></button>
-                    <button style={S.iconBtn} onClick={() => setDelTarget({ type: 'specialite', id: s.id, label: s.libelle })}><Trash2 size={15} color="#ef4444" /></button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => { setEditSpec(s); setSpecForm({ code: s.code, libelle: s.libelle, cycle: s.cycle ? String(s.cycle) : '' }); setErr(null); setSpecOpen(true) }} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"><Pencil size={14} /></button>
+                    <button onClick={() => setDelTarget({ type: 'specialite', id: s.id, label: s.libelle })} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}
-          </div>
+          </Card>
         </div>
       )}
 
-      {/* Modal Année */}
-      {anneeModal && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3 style={S.mTitle}>{anneeModal === 'new' ? 'Nouvelle année académique' : 'Modifier l\'année'}</h3>
-            {err && <div style={S.errBox}>{err}</div>}
-            <div style={S.fg}><label style={S.label}>Libellé * (ex: 2024-2025)</label><input style={S.input} value={anneeForm.libelle} onChange={e => setAnneeForm(f => ({ ...f, libelle: e.target.value }))} placeholder="2024-2025" /></div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.875rem', color: '#475569', marginBottom: '1rem' }}>
-              <input type="checkbox" checked={anneeForm.is_active} onChange={e => setAnneeForm(f => ({ ...f, is_active: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#10b981' }} />
-              Année active (désactive automatiquement les autres)
-            </label>
-            <div style={S.actions}>
-              <button style={S.btnCancel} onClick={() => setAnneeModal(null)}>Annuler</button>
-              <button style={{ ...S.btnPrimary, opacity: saving ? 0.7 : 1 }} onClick={saveAnnee} disabled={saving}>{saving ? '…' : 'Enregistrer'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Dialogs */}
+      <Dialog open={anneeOpen} onOpenChange={setAnneeOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{editAnnee ? 'Modifier l\'année' : 'Nouvelle année académique'}</DialogTitle></DialogHeader>
+          {err && <ErrBox msg={err} />}
+          <Field label="Libellé (ex: 2024-2025)" required><Input value={anneeForm.libelle} onChange={e => setAnneeForm(f => ({ ...f, libelle: e.target.value }))} placeholder="2024-2025" /></Field>
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer mt-2">
+            <input type="checkbox" className="rounded accent-emerald-500 w-4 h-4" checked={anneeForm.is_active} onChange={e => setAnneeForm(f => ({ ...f, is_active: e.target.checked }))} />
+            Marquer comme année active
+          </label>
+          <div className="flex justify-end gap-2 mt-4"><Button variant="outline" size="sm" onClick={() => setAnneeOpen(false)}>Annuler</Button><Button size="sm" onClick={saveAnnee} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button></div>
+        </DialogContent>
+      </Dialog>
 
-      {/* Modal Cycle */}
-      {cycleModal && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3 style={S.mTitle}>{cycleModal === 'new' ? 'Nouveau cycle' : 'Modifier le cycle'}</h3>
-            {err && <div style={S.errBox}>{err}</div>}
-            <div style={S.row2}>
-              <div style={S.fg}><label style={S.label}>Code *</label><input style={S.input} value={cycleForm.code} onChange={e => setCycleForm(f => ({ ...f, code: e.target.value }))} placeholder="LIC" /></div>
-              <div style={S.fg}><label style={S.label}>Libellé *</label><input style={S.input} value={cycleForm.libelle} onChange={e => setCycleForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Licence" /></div>
-            </div>
-            <div style={S.actions}>
-              <button style={S.btnCancel} onClick={() => setCycleModal(null)}>Annuler</button>
-              <button style={{ ...S.btnPrimary, opacity: saving ? 0.7 : 1 }} onClick={saveCycle} disabled={saving}>{saving ? '…' : 'Enregistrer'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={cycleOpen} onOpenChange={setCycleOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{editCycle ? 'Modifier le cycle' : 'Nouveau cycle'}</DialogTitle></DialogHeader>
+          {err && <ErrBox msg={err} />}
+          <FormRow><Field label="Code" required><Input value={cycleForm.code} onChange={e => setCycleForm(f => ({ ...f, code: e.target.value }))} placeholder="LIC" /></Field><Field label="Libellé" required><Input value={cycleForm.libelle} onChange={e => setCycleForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Licence" /></Field></FormRow>
+          <div className="flex justify-end gap-2 mt-4"><Button variant="outline" size="sm" onClick={() => setCycleOpen(false)}>Annuler</Button><Button size="sm" onClick={saveCycle} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button></div>
+        </DialogContent>
+      </Dialog>
 
-      {/* Modal Spécialité */}
-      {specModal && (
-        <div style={S.overlay}>
-          <div style={S.modal}>
-            <h3 style={S.mTitle}>{specModal === 'new' ? 'Nouvelle spécialité' : 'Modifier la spécialité'}</h3>
-            {err && <div style={S.errBox}>{err}</div>}
-            <div style={S.fg}>
-              <label style={S.label}>Cycle</label>
-              <select style={S.fSelect} value={specForm.cycle} onChange={e => setSpecForm(f => ({ ...f, cycle: e.target.value }))}>
-                <option value="">— sans cycle —</option>
-                {cycles.map(c => <option key={c.id} value={c.id}>{c.libelle}</option>)}
-              </select>
-            </div>
-            <div style={S.row2}>
-              <div style={S.fg}><label style={S.label}>Code *</label><input style={S.input} value={specForm.code} onChange={e => setSpecForm(f => ({ ...f, code: e.target.value }))} placeholder="INFO" /></div>
-              <div style={S.fg}><label style={S.label}>Libellé *</label><input style={S.input} value={specForm.libelle} onChange={e => setSpecForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Informatique" /></div>
-            </div>
-            <div style={S.actions}>
-              <button style={S.btnCancel} onClick={() => setSpecModal(null)}>Annuler</button>
-              <button style={{ ...S.btnPrimary, opacity: saving ? 0.7 : 1 }} onClick={saveSpec} disabled={saving}>{saving ? '…' : 'Enregistrer'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={specOpen} onOpenChange={setSpecOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{editSpec ? 'Modifier la spécialité' : 'Nouvelle spécialité'}</DialogTitle></DialogHeader>
+          {err && <ErrBox msg={err} />}
+          <Field label="Cycle"><SelectNative value={specForm.cycle} onChange={e => setSpecForm(f => ({ ...f, cycle: e.target.value }))}><option value="">— sans cycle —</option>{cycles.map(c => <option key={c.id} value={c.id}>{c.libelle}</option>)}</SelectNative></Field>
+          <FormRow className="mt-3"><Field label="Code" required><Input value={specForm.code} onChange={e => setSpecForm(f => ({ ...f, code: e.target.value }))} placeholder="INFO" /></Field><Field label="Libellé" required><Input value={specForm.libelle} onChange={e => setSpecForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Informatique" /></Field></FormRow>
+          <div className="flex justify-end gap-2 mt-4"><Button variant="outline" size="sm" onClick={() => setSpecOpen(false)}>Annuler</Button><Button size="sm" onClick={saveSpec} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button></div>
+        </DialogContent>
+      </Dialog>
 
-      {delTarget && <Confirm msg={`Supprimer "${delTarget.label}" ?`} onYes={doDelete} onNo={() => setDelTarget(null)} />}
+      <ConfirmDialog open={!!delTarget} msg={`Supprimer "${delTarget?.label}" ?`} onYes={doDelete} onNo={() => setDelTarget(null)} />
     </div>
   )
 }
 
-/* ════════════════════════════════════════
+/* ══════════════════════════════════════════
    PAGE PRINCIPALE
-════════════════════════════════════════ */
+══════════════════════════════════════════ */
 type Tab = 'universites' | 'etablissements' | 'comptes' | 'parametrage'
+
+const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: 'universites',    label: 'Universités',    icon: Building2 },
+  { id: 'etablissements', label: 'Établissements', icon: GraduationCap },
+  { id: 'comptes',        label: 'Comptes',        icon: Users },
+  { id: 'parametrage',    label: 'Paramétrage',    icon: Settings },
+]
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('universites')
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'universites',    label: 'Universités',      icon: <Building2 size={15} /> },
-    { id: 'etablissements', label: 'Établissements',   icon: <GraduationCap size={15} /> },
-    { id: 'comptes',        label: 'Comptes',          icon: <Users size={15} /> },
-    { id: 'parametrage',    label: 'Paramétrage',      icon: <Settings size={15} /> },
-  ]
-
   return (
-    <div style={{ padding: '1.5rem' }}>
-      <div style={{ marginBottom: '1.75rem' }}>
-        <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b', margin: '0 0 0.25rem' }}>
-          Administration
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Administration</h1>
+        <p className="text-sm text-slate-500 mt-0.5">
           Configuration du système — universités, établissements, comptes et paramétrage académique
         </p>
       </div>
 
-      <div style={S.tabs}>
-        {tabs.map(t => (
-          <button key={t.id} style={tab === t.id ? S.tabActive : S.tab} onClick={() => setTab(t.id)}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{t.icon}{t.label}</span>
-          </button>
-        ))}
+      {/* Tabs */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+        {TABS.map(t => {
+          const Icon = t.icon
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150',
+                tab === t.id
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              )}
+            >
+              <Icon size={15} />
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       {tab === 'universites'    && <TabUniversites />}

@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Users, ClipboardList, BookOpen, LayoutGrid, UserCheck } from 'lucide-react'
+import { Users, ClipboardList, BookOpen, LayoutGrid, TrendingUp, ArrowRight } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 interface Stats {
   etudiants: number
@@ -14,82 +16,140 @@ interface Stats {
 
 export default function ScolariteDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch<Stats>('/stats/').then(setStats).catch(console.error)
+    apiFetch<Stats>('/stats/').then(setStats).catch(console.error).finally(() => setLoading(false))
   }, [])
 
-  const fmt = (n: number | undefined) => n ?? '…'
+  const fmt = (n: number | undefined) => loading ? '—' : (n ?? 0).toLocaleString('fr-FR')
 
-  const cards = [
-    { label: 'Étudiants', value: fmt(stats?.etudiants), icon: <Users size={22} />, color: '#1AAFE6', href: '/scolarite/etudiants' },
-    { label: 'Inscriptions', value: fmt(stats?.inscriptions), icon: <ClipboardList size={22} />, color: '#22c55e', href: '/scolarite/inscriptions', sub: stats?.annee_active ?? '—' },
-    { label: 'Classes', value: fmt(stats?.classes), icon: <LayoutGrid size={22} />, color: '#8b5cf6', href: '/scolarite/classes' },
-    { label: 'UEs', value: fmt(stats?.ues), icon: <BookOpen size={22} />, color: '#f59e0b', href: '/scolarite/ues' },
+  const kpis = [
+    {
+      label: 'Inscriptions',
+      value: fmt(stats?.inscriptions),
+      sub: stats?.annee_active ?? 'Aucune année active',
+      icon: ClipboardList,
+      color: '#1AAFE6',
+      bg: 'rgba(26,175,230,0.08)',
+      href: '/scolarite/inscriptions',
+      trend: '+12%',
+    },
+    {
+      label: 'Étudiants',
+      value: fmt(stats?.etudiants),
+      sub: 'Total enregistrés',
+      icon: Users,
+      color: '#8b5cf6',
+      bg: 'rgba(139,92,246,0.08)',
+      href: '/scolarite/inscriptions',
+      trend: null,
+    },
+    {
+      label: 'Classes',
+      value: fmt(stats?.classes),
+      sub: 'Groupes actifs',
+      icon: LayoutGrid,
+      color: '#10b981',
+      bg: 'rgba(16,185,129,0.08)',
+      href: '/scolarite/classes',
+      trend: null,
+    },
+    {
+      label: 'Unités d\'enseignement',
+      value: fmt(stats?.ues),
+      sub: 'UE configurées',
+      icon: BookOpen,
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.08)',
+      href: '/scolarite/ues',
+      trend: null,
+    },
+  ]
+
+  const shortcuts = [
+    { label: 'Nouvelle inscription', href: '/scolarite/inscriptions', icon: ClipboardList, desc: 'Inscrire un étudiant', accent: '#1AAFE6' },
+    { label: 'Gérer les classes',    href: '/scolarite/classes',      icon: LayoutGrid,    desc: 'Classes & niveaux',   accent: '#10b981' },
+    { label: 'Unités d\'enseign.',   href: '/scolarite/ues',          icon: BookOpen,      desc: 'UE & ECUE',          accent: '#f59e0b' },
+    { label: 'Étudiants',            href: '/scolarite/inscriptions', icon: Users,         desc: 'Liste des étudiants', accent: '#8b5cf6' },
   ]
 
   return (
-    <div>
-      <div style={{ marginBottom: '1.75rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', margin: '0 0 0.25rem' }}>
-          Scolarité
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
-          Gestion des étudiants, inscriptions et paramétrage académique
-          {stats?.annee_active && (
-            <span style={{ marginLeft: 8, color: '#1AAFE6', fontWeight: 600 }}>· {stats.annee_active}</span>
-          )}
-        </p>
+    <div className="max-w-6xl mx-auto space-y-6">
+
+      {/* Page header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Scolarité</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Gestion des inscriptions, classes et paramétrage académique
+            {stats?.annee_active && (
+              <span className="ml-2 font-semibold text-brand">{stats.annee_active}</span>
+            )}
+          </p>
+        </div>
+        {stats?.annee_active && (
+          <Badge variant="default" className="shrink-0 mt-1">
+            Année active : {stats.annee_active}
+          </Badge>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        {cards.map((c) => (
-          <Link key={c.label} href={c.href} style={{ textDecoration: 'none' }}>
-            <div style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 12,
-              padding: '1.25rem',
-              cursor: 'pointer',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
-            }}
-              onMouseOver={e => { e.currentTarget.style.borderColor = c.color; e.currentTarget.style.boxShadow = `0 0 0 3px ${c.color}18` }}
-              onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: 500 }}>{c.label}</span>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.color }}>
-                  {c.icon}
-                </div>
-              </div>
-              <div style={{ fontSize: '1.875rem', fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>{c.value}</div>
-              {c.sub && <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>{c.sub}</div>}
-            </div>
-          </Link>
-        ))}
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((k) => {
+          const Icon = k.icon
+          return (
+            <Link key={k.label} href={k.href} className="block group">
+              <Card className="hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: k.bg }}>
+                      <Icon size={18} style={{ color: k.color }} />
+                    </div>
+                    {k.trend && (
+                      <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5">
+                        <TrendingUp size={11} /> {k.trend}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 tabular-nums">{k.value}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{k.label}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{k.sub}</div>
+                </CardContent>
+              </Card>
+            </Link>
+          )
+        })}
       </div>
 
-      <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', margin: '0 0 1rem' }}>Actions rapides</h2>
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        {[
-          { label: 'Nouvel étudiant', href: '/scolarite/etudiants?new=1' },
-          { label: 'Nouvelle inscription', href: '/scolarite/inscriptions?new=1' },
-          { label: 'Gérer les classes', href: '/scolarite/classes' },
-          { label: 'Gérer les UEs', href: '/scolarite/ues' },
-        ].map((a) => (
-          <Link key={a.label} href={a.href} style={{
-            padding: '0.5rem 1rem',
-            background: '#fff',
-            border: '1px solid #1AAFE6',
-            borderRadius: 8,
-            color: '#1AAFE6',
-            fontWeight: 500,
-            fontSize: '0.875rem',
-            textDecoration: 'none',
-          }}>
-            {a.label}
-          </Link>
-        ))}
+      {/* Quick actions */}
+      <div>
+        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Actions rapides</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {shortcuts.map((s) => {
+            const Icon = s.icon
+            return (
+              <Link key={s.label} href={s.href} className="block group">
+                <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group-hover:border-slate-300">
+                  <CardContent className="p-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                      style={{ background: `${s.accent}14` }}
+                    >
+                      <Icon size={19} style={{ color: s.accent }} />
+                    </div>
+                    <div className="font-semibold text-slate-800 text-sm leading-tight">{s.label}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">{s.desc}</div>
+                    <div className="flex items-center gap-1 mt-2 text-xs font-medium" style={{ color: s.accent }}>
+                      Accéder <ArrowRight size={11} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

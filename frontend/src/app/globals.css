@@ -3,11 +3,13 @@
 /* ── Digital Campus Design Tokens ── */
 @theme {
   /* Brand: sky blue #1AAFE6, navy gradient #0E3358→#081A2E */
-  --color-brand: #1AAFE6;
+  --color-brand:      #1AAFE6;
   --color-brand-dark: #1490c2;
-  --color-navy-900: #081A2E;
-  --color-navy-800: #0E3358;
-  --color-navy-700: #153f6b;
+  --color-brand-50:   #e8f7fd;
+  --color-navy-900:   #081A2E;
+  --color-navy-800:   #0E3358;
+  --color-navy-700:   #153f6b;
+  --color-navy-600:   #1c4f86;
 
   /* Surface tokens */
   --color-surface: #ffffff;

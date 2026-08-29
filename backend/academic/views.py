@@ -1,12 +1,12 @@
 from rest_framework import generics, filters, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from accounts.permissions import AcademicReadPermission, EtudiantPermission, IsAdminOrScolarite
+from accounts.permissions import AcademicReadPermission, EtudiantPermission, IsAdminOrScolarite, IsAdmin
 from .models import (
-    AnneeAcademique, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
+    AnneeAcademique, Cycle, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
 )
 from .serializers import (
-    AnneeAcademiqueSerializer, SpecialiteSerializer, ClasseSerializer,
+    AnneeAcademiqueSerializer, CycleSerializer, SpecialiteSerializer, ClasseSerializer,
     UESerializer, ECUESerializer, EtudiantSerializer, EtudiantListSerializer,
     InscriptionSerializer, InscriptionCreateSerializer,
 )
@@ -71,15 +71,60 @@ class DashboardStatsView(APIView):
 
 class AnneeListView(generics.ListCreateAPIView):
     serializer_class = AnneeAcademiqueSerializer
-    permission_classes = [IsAdminOrScolarite]
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
         return scoped_qs(self.request, AnneeAcademique.objects.all())
 
 
+class AnneeDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AnneeAcademiqueSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, AnneeAcademique.objects.all())
+
+    def perform_update(self, serializer):
+        # Si on active cette année, désactiver les autres du même établissement
+        instance = serializer.save()
+        if instance.is_active:
+            AnneeAcademique.objects.filter(
+                etablissement=instance.etablissement,
+                is_active=True,
+            ).exclude(pk=instance.pk).update(is_active=False)
+
+
+class CycleListView(generics.ListCreateAPIView):
+    serializer_class = CycleSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, Cycle.objects.all())
+
+
+class CycleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CycleSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, Cycle.objects.all())
+
+
 class SpecialiteListView(generics.ListCreateAPIView):
     serializer_class = SpecialiteSerializer
-    permission_classes = [AcademicReadPermission]
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = scoped_qs(self.request, Specialite.objects.select_related('cycle'))
+        cycle = self.request.query_params.get('cycle')
+        if cycle:
+            qs = qs.filter(cycle_id=cycle)
+        return qs
+
+
+class SpecialiteDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SpecialiteSerializer
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
         return scoped_qs(self.request, Specialite.objects.select_related('cycle'))

@@ -2,19 +2,19 @@ import type { Role } from '@/types'
 
 export const ROUTE_ROLES: Record<string, Role[]> = {
   '/administrateur': ['administrateur'],
-  '/scolarite': ['scolarité', 'administrateur'],
-  '/doyen': ['doyen', 'administrateur'],
-  '/enseignant': ['enseignant', 'administrateur'],
-  '/professeur': ['professeur', 'administrateur'],
-  '/cours': ['cours', 'enseignant', 'professeur', 'administrateur'],
-  '/inscription': ['inscription', 'scolarité', 'administrateur'],
-  '/anonymat': ['anonymat', 'administrateur'],
-  '/daarhspe': ['daarhspe', 'administrateur'],
-  '/gesnote': ['gesnote', 'doyen', 'administrateur'],
-  '/soutenance': ['soutenance', 'administrateur'],
-  '/suivi': ['suivi', 'doyen', 'administrateur'],
-  '/caisse': ['caisse', 'administrateur'],
-  '/pvd': ['pvd', 'doyen', 'administrateur'],
+  '/scolarite':  ['scolarité'],
+  '/doyen':      ['doyen'],
+  '/enseignant': ['enseignant'],
+  '/professeur': ['professeur'],
+  '/cours':      ['cours', 'enseignant', 'professeur'],
+  '/inscription':['inscription', 'scolarité'],
+  '/anonymat':   ['anonymat'],
+  '/daarhspe':   ['daarhspe'],
+  '/gesnote':    ['gesnote', 'doyen'],
+  '/soutenance': ['soutenance'],
+  '/suivi':      ['suivi', 'doyen'],
+  '/caisse':     ['caisse'],
+  '/pvd':        ['pvd', 'doyen'],
 }
 
 export function canAccess(role: Role, pathname: string): boolean {
@@ -47,11 +47,7 @@ export const ROLE_HOME: Record<string, string> = {
 
 // Nav items each role sees in the sidebar
 export const ROLE_NAV: Record<Role, string[]> = {
-  administrateur: [
-    '/administrateur', '/scolarite', '/doyen', '/enseignant',
-    '/cours', '/inscription', '/anonymat', '/daarhspe',
-    '/gesnote', '/soutenance', '/suivi', '/caisse', '/pvd',
-  ],
+  administrateur: ['/administrateur'],
   'scolarité': ['/scolarite', '/inscription'],
   doyen: ['/doyen', '/gesnote', '/suivi', '/pvd'],
   enseignant: ['/enseignant', '/cours'],

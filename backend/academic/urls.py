@@ -4,7 +4,11 @@ from . import views
 urlpatterns = [
     path('stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('annees/', views.AnneeListView.as_view(), name='annees'),
+    path('annees/<int:pk>/', views.AnneeDetailView.as_view(), name='annee-detail'),
+    path('cycles/', views.CycleListView.as_view(), name='cycles'),
+    path('cycles/<int:pk>/', views.CycleDetailView.as_view(), name='cycle-detail'),
     path('specialites/', views.SpecialiteListView.as_view(), name='specialites'),
+    path('specialites/<int:pk>/', views.SpecialiteDetailView.as_view(), name='specialite-detail'),
     path('classes/', views.ClasseListView.as_view(), name='classes'),
     path('ues/', views.UEListView.as_view(), name='ues'),
     path('ues/<int:pk>/', views.UEDetailView.as_view(), name='ue-detail'),

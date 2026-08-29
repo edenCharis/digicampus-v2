@@ -2,11 +2,11 @@ from rest_framework import generics, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import (
-    AnneeAcademique, Specialite, Classe, UE, Etudiant, Inscription,
+    AnneeAcademique, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
 )
 from .serializers import (
     AnneeAcademiqueSerializer, SpecialiteSerializer, ClasseSerializer,
-    UESerializer, EtudiantSerializer, InscriptionSerializer,
+    UESerializer, ECUESerializer, EtudiantSerializer, InscriptionSerializer,
 )
 from accounts.models import User, University, Etablissement
 
@@ -87,7 +87,14 @@ class ClasseListView(generics.ListCreateAPIView):
     search_fields = ['libelle', 'niveau']
 
     def get_queryset(self):
-        return scoped_qs(self.request, Classe.objects.select_related('specialite'))
+        qs = scoped_qs(self.request, Classe.objects.select_related('specialite'))
+        niveau = self.request.query_params.get('niveau')
+        if niveau:
+            qs = qs.filter(niveau=niveau)
+        specialite = self.request.query_params.get('specialite')
+        if specialite:
+            qs = qs.filter(specialite_id=specialite)
+        return qs
 
 
 class UEListView(generics.ListCreateAPIView):
@@ -103,6 +110,12 @@ class UEListView(generics.ListCreateAPIView):
         specialite = self.request.query_params.get('specialite')
         if specialite:
             qs = qs.filter(specialite_id=specialite)
+        niveau = self.request.query_params.get('niveau')
+        if niveau:
+            qs = qs.filter(niveau=niveau)
+        semestre = self.request.query_params.get('semestre')
+        if semestre:
+            qs = qs.filter(semestre=semestre)
         return qs
 
 
@@ -127,6 +140,29 @@ class EtudiantDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return scoped_qs(self.request, Etudiant.objects.all())
+
+
+class ECUEListView(generics.ListCreateAPIView):
+    serializer_class = ECUESerializer
+
+    def get_queryset(self):
+        qs = ECUE.objects.select_related('ue')
+        ue_id = self.request.query_params.get('ue')
+        if ue_id:
+            qs = qs.filter(ue_id=ue_id)
+        return qs
+
+
+class ECUEDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ECUESerializer
+    queryset = ECUE.objects.all()
+
+
+class ClasseDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ClasseSerializer
+
+    def get_queryset(self):
+        return scoped_qs(self.request, Classe.objects.select_related('specialite'))
 
 
 class InscriptionListView(generics.ListCreateAPIView):

@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Building2, GraduationCap, Users, Wifi, Activity,
-  TrendingUp, TrendingDown, ArrowRight, ShieldCheck,
-  Globe, LogIn, UserPlus, UserX,
+  TrendingUp, TrendingDown, ArrowRight,
+  LogIn, UserPlus, UserX,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import type { AdminStats, LogEntry } from './_shared'
@@ -31,8 +31,7 @@ export default function AdminDashboard() {
         .adm-mid { display: grid; grid-template-columns: 1fr 380px; gap: 1rem; margin-top: 1rem; }
         @media (max-width: 900px) { .adm-mid { grid-template-columns: 1fr; } }
 
-        .adm-bottom { display: grid; grid-template-columns: 1fr 320px; gap: 1rem; margin-top: 1rem; }
-        @media (max-width: 900px) { .adm-bottom { grid-template-columns: 1fr; } }
+        .adm-bottom { margin-top: 1rem; }
 
         /* KPI card */
         .kpi-card {
@@ -115,18 +114,6 @@ export default function AdminDashboard() {
           font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
           border-radius: 6px; padding: 1px 6px; margin-top: 4px; text-transform: uppercase;
         }
-
-        /* Shortcut links */
-        .shortcut-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.625rem; padding: 1rem; }
-        .shortcut {
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          gap: 0.5rem; padding: 1rem 0.5rem; border-radius: 10px;
-          background: #fafbfc; border: 1px solid #f1f5f9;
-          text-decoration: none; transition: all 0.15s; cursor: pointer;
-        }
-        .shortcut:hover { background: #f0f9ff; border-color: rgba(26,175,230,0.2); }
-        .shortcut-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
-        .shortcut-label { font-size: 0.7rem; font-weight: 600; color: #64748b; text-align: center; line-height: 1.3; }
 
         /* Skeleton */
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -295,54 +282,6 @@ export default function AdminDashboard() {
                 })}
         </div>
 
-        {/* Raccourcis */}
-        <div className="section-card" style={{ height: 'fit-content' }}>
-          <div className="section-head">
-            <div>
-              <div className="section-title">Accès rapide</div>
-              <div className="section-sub">Navigation directe</div>
-            </div>
-          </div>
-          <div className="shortcut-grid">
-            {[
-              { href: '/administrateur/universites',    label: 'Universités',    icon: Building2,     color: '#1AAFE6', bg: 'rgba(26,175,230,0.08)'  },
-              { href: '/administrateur/etablissements', label: 'Établ.',         icon: GraduationCap, color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)' },
-              { href: '/administrateur/comptes',        label: 'Comptes',        icon: Users,         color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
-              { href: '/administrateur/abonnements',    label: 'Licences',       icon: Globe,         color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-              { href: '/administrateur/logs',           label: 'Logs',           icon: Activity,      color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
-              { href: '/administrateur/parametrage',    label: 'Paramétrage',    icon: ShieldCheck,   color: '#14b8a6', bg: 'rgba(20,184,166,0.08)' },
-            ].map(s => {
-              const Icon = s.icon
-              return (
-                <Link key={s.href} href={s.href} className="shortcut">
-                  <div className="shortcut-icon" style={{ background: s.bg }}>
-                    <Icon size={15} style={{ color: s.color }} />
-                  </div>
-                  <span className="shortcut-label">{s.label}</span>
-                </Link>
-              )
-            })}
-          </div>
-
-          {/* Abonnés actifs */}
-          <div style={{ margin: '0 1rem 1rem', padding: '0.875rem 1rem', background: 'linear-gradient(135deg, rgba(26,175,230,0.05) 0%, rgba(139,92,246,0.05) 100%)', borderRadius: 10, border: '1px solid rgba(26,175,230,0.1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Abonnés actifs</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1AAFE6', letterSpacing: '-0.03em' }}>
-                {loading ? '—' : stats?.abonnes_actifs ?? 0}
-                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#94a3b8', marginLeft: 4 }}>/ {stats?.universities ?? 0}</span>
-              </div>
-            </div>
-            <div style={{ marginTop: 8, height: 4, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: 99,
-                background: 'linear-gradient(90deg, #1AAFE6, #8b5cf6)',
-                width: `${stats?.universities ? Math.round((stats.abonnes_actifs / stats.universities) * 100) : 0}%`,
-                transition: 'width 0.6s ease',
-              }} />
-            </div>
-          </div>
-        </div>
       </div>
 
       <div style={{ height: '2rem' }} />

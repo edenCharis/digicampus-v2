@@ -62,7 +62,6 @@ export default function ComptePage() {
   }
 
   const initials = me ? (me.nom || me.login).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'
-  const joinDate = me ? new Date(me.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
@@ -239,36 +238,6 @@ export default function ComptePage() {
           <button className="cp-btn cp-btn-ghost" onClick={() => { setOldPw(''); setNewPw(''); setPwOpen(true) }}>
             <Lock size={13} /> Changer le mot de passe
           </button>
-        </div>
-      </div>
-
-      {/* Info supplémentaire */}
-      <div className="cp-card">
-        <div className="cp-card-head">
-          <div>
-            <div className="cp-card-title">Informations du compte</div>
-            <div className="cp-card-sub">Données non modifiables</div>
-          </div>
-        </div>
-        <div className="cp-fields">
-          <div className="cp-field">
-            <div style={{ flex: 1 }}>
-              <div className="cp-field-label">Identifiant système</div>
-              <div className="cp-field-val" style={{ fontFamily: 'monospace' }}>#{me?.id}</div>
-            </div>
-          </div>
-          <div className="cp-field">
-            <div style={{ flex: 1 }}>
-              <div className="cp-field-label">Membre depuis</div>
-              <div className="cp-field-val">{joinDate}</div>
-            </div>
-          </div>
-          <div className="cp-field">
-            <div style={{ flex: 1 }}>
-              <div className="cp-field-label">Rôle</div>
-              <div className="cp-field-val">{me ? (ROLE_LABELS[me.role] ?? me.role) : '—'}</div>
-            </div>
-          </div>
         </div>
       </div>
 

@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* ── Digital Campus Design Tokens ── */
+@theme {
+  /* Brand: sky blue #1AAFE6, navy gradient #0E3358→#081A2E */
+  --color-brand: #1AAFE6;
+  --color-brand-dark: #1490c2;
+  --color-navy-900: #081A2E;
+  --color-navy-800: #0E3358;
+  --color-navy-700: #153f6b;
+
+  /* Surface tokens */
+  --color-surface: #ffffff;
+  --color-surface-2: #f5f7fa;
+  --color-surface-3: #eef1f6;
+  --color-border: #e2e8f0;
+  --color-muted: #64748b;
+
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #1AAFE6;
+
+  /* Sidebar specifics */
+  --sidebar-bg: linear-gradient(180deg, #0E3358 0%, #081A2E 100%);
+  --sidebar-text: #C8D8E8;
+  --sidebar-active: #1AAFE6;
+  --sidebar-sub-bg: #071628;
+
+  /* Font */
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-surface: #0f172a;
+    --color-surface-2: #1e293b;
+    --color-surface-3: #334155;
+    --color-border: #334155;
+    --color-muted: #94a3b8;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-surface: #0f172a;
+  --color-surface-2: #1e293b;
+  --color-surface-3: #334155;
+  --color-border: #334155;
+  --color-muted: #94a3b8;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--color-surface-2);
+  color: #1e293b;
+  font-family: var(--font-sans);
+}
+
+[data-theme="dark"] body {
+  color: #e2e8f0;
+}

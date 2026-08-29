@@ -1,14 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import {
-  Building2, GraduationCap, Users, Wifi, Activity,
-  TrendingUp, TrendingDown, ArrowRight,
-  LogIn, UserPlus, UserX,
+  Building2, GraduationCap, Users, Wifi,
+  TrendingUp, TrendingDown,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import type { AdminStats, LogEntry } from './_shared'
-import { ROLE_COLORS, ACTION_COLORS } from './_shared'
+import type { AdminStats } from './_shared'
+import { ROLE_COLORS } from './_shared'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -30,8 +28,6 @@ export default function AdminDashboard() {
 
         .adm-mid { display: grid; grid-template-columns: 1fr 380px; gap: 1rem; margin-top: 1rem; }
         @media (max-width: 900px) { .adm-mid { grid-template-columns: 1fr; } }
-
-        .adm-bottom { margin-top: 1rem; }
 
         /* KPI card */
         .kpi-card {
@@ -94,26 +90,6 @@ export default function AdminDashboard() {
         .role-row { padding: 0.6rem 1.25rem; }
         .role-bar-track { height: 4px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-top: 5px; }
         .role-bar-fill { height: 100%; border-radius: 99px; }
-
-        /* Log entries */
-        .log-entry {
-          display: flex; align-items: flex-start; gap: 10px;
-          padding: 0.75rem 1.25rem;
-          border-bottom: 1px solid #fafafa;
-        }
-        .log-entry:last-child { border-bottom: none; }
-        .log-dot {
-          width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center; margin-top: 1px;
-        }
-        .log-name { font-size: 0.8125rem; font-weight: 600; color: #1e293b; }
-        .log-desc { font-size: 0.75rem; color: #94a3b8; margin-top: 1px; }
-        .log-time { font-size: 0.7rem; color: #cbd5e1; white-space: nowrap; margin-left: auto; flex-shrink: 0; padding-top: 2px; }
-        .log-badge {
-          display: inline-flex; align-items: center;
-          font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
-          border-radius: 6px; padding: 1px 6px; margin-top: 4px; text-transform: uppercase;
-        }
 
         /* Skeleton */
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -229,60 +205,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="adm-bottom">
-        {/* Activité récente */}
-        <div className="section-card">
-          <div className="section-head">
-            <div>
-              <div className="section-title">Activité récente</div>
-              <div className="section-sub">Dernières actions sur la plateforme</div>
-            </div>
-            <Link href="/administrateur/logs" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600, color: '#1AAFE6', textDecoration: 'none' }}>
-              Tout voir <ArrowRight size={12} />
-            </Link>
-          </div>
-          {loading
-            ? Array(6).fill(0).map((_, i) => (
-                <div key={i} className="log-entry">
-                  <div className="skel" style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div className="skel" style={{ height: 12, width: '60%', marginBottom: 6 }} />
-                    <div className="skel" style={{ height: 10, width: '40%' }} />
-                  </div>
-                </div>
-              ))
-            : !stats?.recent_logs.length
-              ? <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem' }}>Aucune activité récente.</div>
-              : stats.recent_logs.map((log: LogEntry) => {
-                  const ac = ACTION_COLORS[log.action] ?? { bg: 'rgba(100,116,139,0.08)', color: '#64748b' }
-                  const ActionIcon = log.action === 'login' ? LogIn : log.action === 'create_user' ? UserPlus : log.action === 'delete_user' ? UserX : Activity
-                  return (
-                    <div key={log.id} className="log-entry">
-                      <div className="log-dot" style={{ background: ac.bg }}>
-                        <ActionIcon size={13} style={{ color: ac.color }} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="log-name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {log.user_nom || log.user_login || 'Système'}
-                          <span className="log-badge" style={{ background: ac.bg, color: ac.color }}>{log.action_label}</span>
-                        </div>
-                        <div className="log-desc" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {log.description}{log.university_name ? ` · ${log.university_name}` : ''}
-                        </div>
-                      </div>
-                      <div className="log-time">
-                        {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        <br />
-                        <span style={{ fontSize: '0.65rem' }}>
-                          {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
-        </div>
-
-      </div>
 
       <div style={{ height: '2rem' }} />
     </div>

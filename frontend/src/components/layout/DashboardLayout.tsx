@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebarW = collapsed ? 72 : 256
 
   return (
-    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
+    <div style={{ minHeight: '100vh', background: '#F1F5F9' }}>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
         body { overflow-x: hidden; }
@@ -109,7 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .dc-topbar {
           height: 56px;
           background: #fff;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid #e2e8f0;
           display: flex; align-items: center;
           padding: 0 1.5rem; gap: 1rem;
           position: fixed; top: 0; z-index: 30;
@@ -205,7 +205,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           margin-left: ${sidebarW}px;
           padding-top: 56px;
           min-height: 100vh;
-          background: #fff;
+          background: #F1F5F9;
           transition: margin-left 0.22s cubic-bezier(.4,0,.2,1);
         }
         @media (max-width: 1023px) { .dc-content { margin-left: 0 !important; } }

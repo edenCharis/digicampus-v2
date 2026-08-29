@@ -65,6 +65,11 @@ export default function ComptePage() {
     finally { setSaving(false) }
   }
 
+  function syncToLocalStorage(updated: Me) {
+    const stored = localStorage.getItem('dc_user')
+    if (stored) localStorage.setItem('dc_user', JSON.stringify({ ...JSON.parse(stored), photo: updated.photo }))
+  }
+
   async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -73,7 +78,7 @@ export default function ComptePage() {
     try {
       const fd = new FormData(); fd.append('photo', file)
       const updated = await apiUpload<Me>('/auth/photo/', fd)
-      setMe(updated)
+      setMe(updated); syncToLocalStorage(updated)
       showToast({ type: 'ok', msg: 'Photo mise à jour.' })
     } catch { showToast({ type: 'err', msg: "Erreur lors du téléversement." }) }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
@@ -83,7 +88,7 @@ export default function ComptePage() {
     setUploading(true)
     try {
       const updated = await apiFetch<Me>('/auth/photo/', { method: 'DELETE' })
-      setMe(updated)
+      setMe(updated); syncToLocalStorage(updated)
       showToast({ type: 'ok', msg: 'Photo supprimée.' })
     } catch { showToast({ type: 'err', msg: 'Erreur lors de la suppression.' }) }
     finally { setUploading(false) }

@@ -41,6 +41,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
 interface SidebarProps {
   role?: Role
   nom?: string
+  photo?: string | null
   etablissement?: string
   onLogout?: () => void
   open?: boolean
@@ -48,7 +49,9 @@ interface SidebarProps {
   collapsed?: boolean
 }
 
-export default function Sidebar({ role, nom, etablissement, onLogout, open = true, onClose, collapsed = false }: SidebarProps) {
+const MEDIA_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')
+
+export default function Sidebar({ role, nom, photo, etablissement, onLogout, open = true, onClose, collapsed = false }: SidebarProps) {
   const pathname = usePathname()
   const allowedRoutes = role ? ROLE_NAV[role] ?? [] : []
   const items = ALL_NAV_ITEMS.filter(i => allowedRoutes.includes(i.href))
@@ -203,6 +206,7 @@ export default function Sidebar({ role, nom, etablissement, onLogout, open = tru
             background: linear-gradient(135deg, #0E3358, #1AAFE6);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.72rem; font-weight: 700; color: #fff;
+            overflow: hidden;
           }
           .sb-user-info {
             flex: 1; min-width: 0; overflow: hidden;
@@ -259,7 +263,12 @@ export default function Sidebar({ role, nom, etablissement, onLogout, open = tru
         {/* User card */}
         <div className="sb-user">
           <div className="sb-user-card">
-            <div className="sb-avatar">{initials}</div>
+            <div className="sb-avatar">
+              {photo
+                ? <img src={photo.startsWith('http') ? photo : `${MEDIA_BASE}${photo}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : initials
+              }
+            </div>
             <div className="sb-user-info">
               <div className="sb-user-name">{nom ?? 'Utilisateur'}</div>
               <div className="sb-user-role">{roleLabel}</div>

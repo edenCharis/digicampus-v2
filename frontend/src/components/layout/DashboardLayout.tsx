@@ -154,6 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           background: linear-gradient(135deg, #0E3358 0%, #1AAFE6 100%);
           display: flex; align-items: center; justify-content: center;
           font-size: 0.68rem; font-weight: 700; color: #fff; flex-shrink: 0;
+          overflow: hidden; object-fit: cover;
         }
         .dc-user-name { font-size: 0.8rem; font-weight: 600; color: #1e293b; }
         .dc-role-badge {
@@ -226,6 +227,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar
         role={user.role}
         nom={user.nom}
+        photo={user.photo}
         etablissement={user.etablissement_name ?? undefined}
         onLogout={handleLogout}
         open={mobileOpen}
@@ -264,7 +266,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="dc-profile-wrap" ref={profileRef}>
               <div className="dc-user-pill" onClick={() => setProfileOpen(v => !v)}>
                 <div className="dc-user-avatar">
-                  {(user.nom || user.login)[0].toUpperCase()}
+                  {user.photo
+                    ? <img src={user.photo.startsWith('http') ? user.photo : `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')}${user.photo}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    : (user.nom || user.login)[0].toUpperCase()
+                  }
                 </div>
                 <span className="dc-user-name">{user.nom || user.login}</span>
                 <span className="dc-role-badge">{ROLE_LABELS[user.role] ?? user.role}</span>
@@ -272,9 +277,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               {profileOpen && (
                 <div className="dc-profile-dropdown">
-                  <div className="dc-profile-header">
-                    <div className="dc-profile-name">{user.nom || user.login}</div>
-                    <div className="dc-profile-role">{ROLE_LABELS[user.role] ?? user.role} · {user.etablissement_name ?? 'Digital Campus'}</div>
+                  <div className="dc-profile-header" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#0E3358,#1AAFE6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#fff', overflow: 'hidden', flexShrink: 0 }}>
+                      {user.photo
+                        ? <img src={user.photo.startsWith('http') ? user.photo : `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')}${user.photo}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : (user.nom || user.login)[0].toUpperCase()
+                      }
+                    </div>
+                    <div>
+                      <div className="dc-profile-name">{user.nom || user.login}</div>
+                      <div className="dc-profile-role">{ROLE_LABELS[user.role] ?? user.role} · {user.etablissement_name ?? 'Digital Campus'}</div>
+                    </div>
                   </div>
                   <Link href="/compte" className="dc-profile-item" onClick={() => setProfileOpen(false)}>
                     <User size={15} /> Mon compte

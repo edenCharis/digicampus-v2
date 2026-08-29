@@ -5,15 +5,24 @@ import {
   GraduationCap, Users, BookOpen, ClipboardList,
   UserCheck, Award, FileText, BarChart2, CreditCard, BookMarked,
   ShieldCheck, Briefcase, LogOut, X, ChevronRight,
+  Building2, Activity, Settings, Globe,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROLE_NAV } from '@/lib/permissions'
 import type { Role } from '@/types'
 
-interface NavItem { label: string; href: string; icon: React.ReactNode }
+interface NavItem { label: string; href: string; icon: React.ReactNode; exact?: boolean }
 
 const ALL_NAV_ITEMS: NavItem[] = [
-  { label: 'Administration',    href: '/administrateur', icon: <ShieldCheck size={17} /> },
+  // Admin sub-nav (only admin role sees these via ROLE_NAV)
+  { label: 'Tableau de bord',   href: '/administrateur',                  icon: <BarChart2 size={17} />,     exact: true },
+  { label: 'Universités',       href: '/administrateur/universites',       icon: <Building2 size={17} /> },
+  { label: 'Établissements',    href: '/administrateur/etablissements',    icon: <GraduationCap size={17} /> },
+  { label: 'Comptes',           href: '/administrateur/comptes',           icon: <Users size={17} /> },
+  { label: 'Abonnements',       href: '/administrateur/abonnements',       icon: <Globe size={17} /> },
+  { label: 'Logs',              href: '/administrateur/logs',              icon: <Activity size={17} /> },
+  { label: 'Paramétrage',       href: '/administrateur/parametrage',       icon: <Settings size={17} /> },
+  // Other roles
   { label: 'Scolarité',         href: '/scolarite',      icon: <GraduationCap size={17} /> },
   { label: 'Doyen',             href: '/doyen',          icon: <Briefcase size={17} /> },
   { label: 'Enseignants',       href: '/enseignant',     icon: <Users size={17} /> },
@@ -233,7 +242,9 @@ export default function Sidebar({ role, nom, etablissement, onLogout, open = tru
         {/* Nav */}
         <nav className="sb-nav">
           {items.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + '/')
+            const active = item.exact
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(item.href + '/')
             return (
               <Link key={item.href} href={item.href} data-label={item.label}
                 className={cn('sb-item', active && 'active')}>

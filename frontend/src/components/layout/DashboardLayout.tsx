@@ -9,7 +9,13 @@ import { ROLE_HOME, canAccess } from '@/lib/permissions'
 import { logout as apiLogout, clearTokens } from '@/lib/api'
 
 const MODULE_LABELS: Record<string, string> = {
-  '/administrateur': 'Administration',
+  '/administrateur/universites':    'Universités',
+  '/administrateur/etablissements': 'Établissements',
+  '/administrateur/comptes':        'Comptes',
+  '/administrateur/abonnements':    'Abonnements',
+  '/administrateur/logs':           'Logs d\'activité',
+  '/administrateur/parametrage':    'Paramétrage',
+  '/administrateur':                'Tableau de bord',
   '/scolarite':      'Scolarité',
   '/doyen':          'Doyen',
   '/enseignant':     'Enseignants',

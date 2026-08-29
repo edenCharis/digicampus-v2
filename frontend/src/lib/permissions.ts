@@ -47,7 +47,15 @@ export const ROLE_HOME: Record<string, string> = {
 
 // Nav items each role sees in the sidebar
 export const ROLE_NAV: Record<Role, string[]> = {
-  administrateur: ['/administrateur'],
+  administrateur: [
+    '/administrateur',
+    '/administrateur/universites',
+    '/administrateur/etablissements',
+    '/administrateur/comptes',
+    '/administrateur/abonnements',
+    '/administrateur/logs',
+    '/administrateur/parametrage',
+  ],
   'scolarité': ['/scolarite', '/inscription'],
   doyen: ['/doyen', '/gesnote', '/suivi', '/pvd'],
   enseignant: ['/enseignant', '/cours'],

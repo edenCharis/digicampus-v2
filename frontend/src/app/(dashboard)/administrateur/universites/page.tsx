@@ -69,7 +69,7 @@ export default function UniversitesPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? 'Modifier l'université' : 'Nouvelle université'}</DialogTitle>
+            <DialogTitle>{editing ? "Modifier l'université" : 'Nouvelle université'}</DialogTitle>
             <DialogDescription>Informations de l'institution partenaire.</DialogDescription>
           </DialogHeader>
           {err && <ErrBox msg={err} />}

@@ -1,11 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Building2, GraduationCap, Users, Wifi, BarChart2, Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import Link from 'next/link'
+import {
+  Building2, GraduationCap, Users, Wifi, Activity,
+  TrendingUp, TrendingDown, ArrowRight, ShieldCheck,
+  Globe, LogIn, UserPlus, UserX,
+} from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { Card, CardContent } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 import type { AdminStats, LogEntry } from './_shared'
-import { ROLE_COLORS } from './_shared'
+import { ROLE_COLORS, ACTION_COLORS } from './_shared'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -18,144 +21,331 @@ export default function AdminDashboard() {
   const connexionTrend = stats ? stats.connexions_today - stats.connexions_yesterday : 0
   const maxConn = Math.max(...(stats?.connexions_week.map(d => d.count) ?? [1]), 1)
 
-  const kpis = [
-    { label: 'Universités',      value: stats?.universities ?? '—',   icon: Building2,     color: '#1AAFE6', bg: 'rgba(26,175,230,0.08)',  sub: 'Partenaires actifs' },
-    { label: 'Établissements',   value: stats?.etablissements ?? '—', icon: GraduationCap, color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', sub: 'Facultés & écoles' },
-    { label: 'Comptes actifs',   value: stats?.users_total ?? '—',    icon: Users,         color: '#10b981', bg: 'rgba(16,185,129,0.08)', sub: 'Utilisateurs du système' },
-    {
-      label: "Connexions aujourd'hui",
-      value: stats?.connexions_today ?? '—',
-      icon: Wifi, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',
-      sub: connexionTrend === 0 ? 'Stable' : connexionTrend > 0 ? `+${connexionTrend} vs hier` : `${connexionTrend} vs hier`,
-      trend: connexionTrend,
-    },
-  ]
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-[1.375rem] font-bold text-slate-900 tracking-tight">Tableau de bord</h1>
-        <p className="text-sm text-slate-400 mt-0.5">Digital Technology Congo — Vue d'ensemble de la plateforme</p>
+    <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+      <style>{`
+        .adm-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        @media (max-width: 900px) { .adm-kpi { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .adm-kpi { grid-template-columns: 1fr; } }
+
+        .adm-mid { display: grid; grid-template-columns: 1fr 380px; gap: 1rem; margin-top: 1rem; }
+        @media (max-width: 900px) { .adm-mid { grid-template-columns: 1fr; } }
+
+        .adm-bottom { display: grid; grid-template-columns: 1fr 320px; gap: 1rem; margin-top: 1rem; }
+        @media (max-width: 900px) { .adm-bottom { grid-template-columns: 1fr; } }
+
+        /* KPI card */
+        .kpi-card {
+          background: #fff;
+          border: 1px solid #f1f5f9;
+          border-radius: 14px;
+          padding: 1.25rem 1.25rem 1rem;
+          box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.02);
+          position: relative; overflow: hidden;
+          transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .kpi-card::before {
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+          background: var(--kpi-color, #1AAFE6);
+          opacity: 0; transition: opacity 0.2s;
+        }
+        .kpi-card:hover::before { opacity: 1; }
+        .kpi-card:hover { box-shadow: 0 4px 16px rgba(15,23,42,0.07); border-color: #e9eef5; }
+        .kpi-num {
+          font-size: 2rem; font-weight: 800; color: #0f172a;
+          letter-spacing: -0.04em; line-height: 1; margin: 0.5rem 0 0.25rem;
+          font-variant-numeric: tabular-nums;
+        }
+        .kpi-label { font-size: 0.8125rem; font-weight: 600; color: #64748b; }
+        .kpi-sub { font-size: 0.72rem; color: #94a3b8; margin-top: 0.25rem; }
+        .kpi-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .kpi-trend {
+          display: inline-flex; align-items: center; gap: 3px;
+          font-size: 0.72rem; font-weight: 700; border-radius: 20px;
+          padding: 0.15rem 0.5rem; margin-top: 0.5rem;
+        }
+
+        /* Section card */
+        .section-card {
+          background: #fff;
+          border: 1px solid #f1f5f9;
+          border-radius: 14px;
+          box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+          overflow: hidden;
+        }
+        .section-head {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 1rem 1.25rem 0.875rem;
+          border-bottom: 1px solid #f8fafc;
+        }
+        .section-title { font-size: 0.875rem; font-weight: 700; color: #0f172a; }
+        .section-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 1px; }
+
+        /* Chart bars */
+        .bar-wrap { display: flex; align-items: flex-end; gap: 6px; height: 80px; padding: 0 1.25rem 0; }
+        .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .bar-val { font-size: 9px; font-weight: 600; color: #94a3b8; }
+        .bar { width: 100%; border-radius: 4px; transition: all 0.3s; }
+        .bar-day { font-size: 9px; color: #cbd5e1; margin-top: 4px; }
+
+        /* Role bars */
+        .role-row { padding: 0.6rem 1.25rem; }
+        .role-bar-track { height: 4px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-top: 5px; }
+        .role-bar-fill { height: 100%; border-radius: 99px; }
+
+        /* Log entries */
+        .log-entry {
+          display: flex; align-items: flex-start; gap: 10px;
+          padding: 0.75rem 1.25rem;
+          border-bottom: 1px solid #fafafa;
+        }
+        .log-entry:last-child { border-bottom: none; }
+        .log-dot {
+          width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center; margin-top: 1px;
+        }
+        .log-name { font-size: 0.8125rem; font-weight: 600; color: #1e293b; }
+        .log-desc { font-size: 0.75rem; color: #94a3b8; margin-top: 1px; }
+        .log-time { font-size: 0.7rem; color: #cbd5e1; white-space: nowrap; margin-left: auto; flex-shrink: 0; padding-top: 2px; }
+        .log-badge {
+          display: inline-flex; align-items: center;
+          font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
+          border-radius: 6px; padding: 1px 6px; margin-top: 4px; text-transform: uppercase;
+        }
+
+        /* Shortcut links */
+        .shortcut-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.625rem; padding: 1rem; }
+        .shortcut {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 0.5rem; padding: 1rem 0.5rem; border-radius: 10px;
+          background: #fafbfc; border: 1px solid #f1f5f9;
+          text-decoration: none; transition: all 0.15s; cursor: pointer;
+        }
+        .shortcut:hover { background: #f0f9ff; border-color: rgba(26,175,230,0.2); }
+        .shortcut-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+        .shortcut-label { font-size: 0.7rem; font-weight: 600; color: #64748b; text-align: center; line-height: 1.3; }
+
+        /* Skeleton */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .skel { background: #f1f5f9; border-radius: 6px; animation: pulse 1.4s ease-in-out infinite; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
+          Tableau de bord
+        </h1>
+        <p style={{ fontSize: '0.8125rem', color: '#94a3b8', marginTop: 3 }}>
+          Digital Technology Congo — Plateforme Digital Campus
+        </p>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map(k => {
+      <div className="adm-kpi">
+        {[
+          { label: 'Universités',        value: stats?.universities,    icon: Building2,     color: '#1AAFE6', bg: 'rgba(26,175,230,0.08)',  trend: null,           sub: 'Partenaires actifs' },
+          { label: 'Établissements',     value: stats?.etablissements,  icon: GraduationCap, color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', trend: null,           sub: 'Facultés & écoles' },
+          { label: 'Comptes actifs',     value: stats?.users_total,     icon: Users,         color: '#10b981', bg: 'rgba(16,185,129,0.08)', trend: null,           sub: 'Utilisateurs total' },
+          { label: 'Connexions du jour', value: stats?.connexions_today, icon: Wifi,         color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', trend: connexionTrend, sub: 'vs hier' },
+        ].map(k => {
           const Icon = k.icon
           return (
-            <Card key={k.label} className="overflow-hidden">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: k.bg }}>
-                    <Icon size={17} style={{ color: k.color }} />
-                  </div>
-                  {k.trend !== undefined && k.trend !== 0 && (
-                    <span className={cn('flex items-center gap-0.5 text-xs font-semibold', k.trend > 0 ? 'text-emerald-500' : 'text-red-400')}>
-                      {k.trend > 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                      {Math.abs(k.trend)}
-                    </span>
-                  )}
-                  {k.trend === 0 && k.trend !== undefined && <Minus size={13} className="text-slate-300" />}
+            <div key={k.label} className="kpi-card" style={{ '--kpi-color': k.color } as React.CSSProperties}>
+              <div className="kpi-icon" style={{ background: k.bg }}>
+                <Icon size={16} style={{ color: k.color }} />
+              </div>
+              <div className="kpi-num">
+                {loading ? <span className="skel" style={{ display: 'block', width: 60, height: 32 }} /> : (k.value ?? '—')}
+              </div>
+              <div className="kpi-label">{k.label}</div>
+              {k.trend !== null && !loading && (
+                <div className="kpi-trend" style={{
+                  background: k.trend === 0 ? '#f8fafc' : k.trend > 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.07)',
+                  color: k.trend === 0 ? '#94a3b8' : k.trend > 0 ? '#10b981' : '#ef4444',
+                }}>
+                  {k.trend > 0 ? <TrendingUp size={10} /> : k.trend < 0 ? <TrendingDown size={10} /> : null}
+                  {k.trend > 0 ? '+' : ''}{k.trend} {k.sub}
                 </div>
-                <div className="text-2xl font-bold text-slate-900 tabular-nums">
-                  {loading ? <span className="text-slate-200">—</span> : k.value}
-                </div>
-                <div className="text-[11px] font-semibold text-slate-500 mt-0.5">{k.label}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">{k.sub}</div>
-              </CardContent>
-            </Card>
+              )}
+              {k.trend === null && <div className="kpi-sub">{k.sub}</div>}
+            </div>
           )
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Sparkbar connexions */}
-        <Card className="lg:col-span-3">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="font-bold text-slate-900 text-sm">Connexions — 7 derniers jours</div>
-                <div className="text-xs text-slate-400 mt-0.5">Activité quotidienne de la plateforme</div>
-              </div>
-              <BarChart2 size={16} className="text-slate-300" />
+      <div className="adm-mid">
+        {/* Chart connexions */}
+        <div className="section-card">
+          <div className="section-head">
+            <div>
+              <div className="section-title">Connexions — 7 jours</div>
+              <div className="section-sub">Nombre de logins par jour</div>
             </div>
-            <div className="flex items-end gap-2 h-28">
-              {(stats?.connexions_week ?? Array(7).fill({ date: '', count: 0 })).map((d, i) => {
-                const h = maxConn > 0 ? Math.max(4, Math.round((d.count / maxConn) * 96)) : 4
-                const isToday = i === 6
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[9px] font-semibold text-slate-400">{d.count || ''}</span>
-                    <div className="w-full rounded-md transition-all" style={{
-                      height: `${h}px`,
-                      background: isToday ? '#1AAFE6' : 'rgba(26,175,230,0.18)',
-                    }} />
-                    <span className="text-[9px] text-slate-400">
-                      {d.date ? new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short' }) : ''}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? '—' : stats?.connexions_today ?? 0}
+            </span>
+          </div>
+          <div className="bar-wrap">
+            {(stats?.connexions_week ?? Array(7).fill({ date: '', count: 0 })).map((d, i) => {
+              const h = maxConn > 0 ? Math.max(6, Math.round((d.count / maxConn) * 68)) : 6
+              const isToday = i === 6
+              return (
+                <div key={i} className="bar-col">
+                  <span className="bar-val">{d.count > 0 ? d.count : ''}</span>
+                  <div className="bar" style={{
+                    height: h,
+                    background: isToday
+                      ? 'linear-gradient(180deg, #1AAFE6 0%, rgba(26,175,230,0.6) 100%)'
+                      : '#f1f5f9',
+                    boxShadow: isToday ? '0 2px 8px rgba(26,175,230,0.25)' : 'none',
+                  }} />
+                  <span className="bar-day">
+                    {d.date ? new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short' }) : ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ height: 12 }} />
+        </div>
 
-        {/* Rôles */}
-        <Card className="lg:col-span-2">
-          <CardContent className="p-5">
-            <div className="font-bold text-slate-900 text-sm mb-1">Comptes par rôle</div>
-            <div className="text-xs text-slate-400 mb-4">Répartition des utilisateurs</div>
-            <div className="space-y-2.5">
-              {loading
-                ? Array(5).fill(0).map((_, i) => <div key={i} className="h-5 bg-slate-100 rounded animate-pulse" />)
-                : stats?.users_by_role.slice(0, 6).map(r => {
-                    const color = ROLE_COLORS[r.role] ?? '#64748b'
-                    const pct = stats.users_total > 0 ? Math.round((r.count / stats.users_total) * 100) : 0
-                    return (
-                      <div key={r.role}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium text-slate-700 capitalize">{r.role}</span>
-                          <span className="text-xs font-bold text-slate-500">{r.count}</span>
-                        </div>
-                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-                        </div>
-                      </div>
-                    )
-                  })}
+        {/* Comptes par rôle */}
+        <div className="section-card">
+          <div className="section-head">
+            <div>
+              <div className="section-title">Comptes par rôle</div>
+              <div className="section-sub">{loading ? '—' : stats?.users_total ?? 0} utilisateurs</div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div style={{ paddingTop: 6, paddingBottom: 6 }}>
+            {loading
+              ? Array(5).fill(0).map((_, i) => <div key={i} className="role-row"><div className="skel" style={{ height: 14, width: '70%' }} /></div>)
+              : stats?.users_by_role.slice(0, 7).map(r => {
+                  const color = ROLE_COLORS[r.role] ?? '#64748b'
+                  const pct = stats.users_total > 0 ? Math.round((r.count / stats.users_total) * 100) : 0
+                  return (
+                    <div key={r.role} className="role-row">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', textTransform: 'capitalize' }}>{r.role}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{r.count}</span>
+                      </div>
+                      <div className="role-bar-track">
+                        <div className="role-bar-fill" style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                    </div>
+                  )
+                })}
+          </div>
+        </div>
       </div>
 
-      {/* Activité récente */}
-      <Card>
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-50">
-          <div className="font-bold text-slate-900 text-sm">Activité récente</div>
-          <Activity size={14} className="text-slate-300" />
-        </div>
-        {loading
-          ? <div className="p-5 space-y-3">{Array(5).fill(0).map((_, i) => <div key={i} className="h-8 bg-slate-100 rounded animate-pulse" />)}</div>
-          : !stats?.recent_logs.length
-            ? <div className="py-10 text-center text-slate-400 text-sm">Aucune activité récente.</div>
-            : stats.recent_logs.map((log: LogEntry, i: number) => (
-              <div key={log.id} className={cn('flex items-center gap-3 px-5 py-3', i < stats.recent_logs.length - 1 && 'border-b border-slate-50')}>
-                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                  <Activity size={13} className="text-slate-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-slate-800 truncate">
-                    <span className="font-semibold">{log.user_nom || log.user_login || 'Système'}</span>
-                    <span className="text-slate-400 ml-1.5">{log.description}</span>
+      <div className="adm-bottom">
+        {/* Activité récente */}
+        <div className="section-card">
+          <div className="section-head">
+            <div>
+              <div className="section-title">Activité récente</div>
+              <div className="section-sub">Dernières actions sur la plateforme</div>
+            </div>
+            <Link href="/administrateur/logs" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600, color: '#1AAFE6', textDecoration: 'none' }}>
+              Tout voir <ArrowRight size={12} />
+            </Link>
+          </div>
+          {loading
+            ? Array(6).fill(0).map((_, i) => (
+                <div key={i} className="log-entry">
+                  <div className="skel" style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skel" style={{ height: 12, width: '60%', marginBottom: 6 }} />
+                    <div className="skel" style={{ height: 10, width: '40%' }} />
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">{log.university_name ?? ''}</div>
                 </div>
-                <div className="text-[11px] text-slate-400 shrink-0">
-                  {new Date(log.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                </div>
+              ))
+            : !stats?.recent_logs.length
+              ? <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem' }}>Aucune activité récente.</div>
+              : stats.recent_logs.map((log: LogEntry) => {
+                  const ac = ACTION_COLORS[log.action] ?? { bg: 'rgba(100,116,139,0.08)', color: '#64748b' }
+                  const ActionIcon = log.action === 'login' ? LogIn : log.action === 'create_user' ? UserPlus : log.action === 'delete_user' ? UserX : Activity
+                  return (
+                    <div key={log.id} className="log-entry">
+                      <div className="log-dot" style={{ background: ac.bg }}>
+                        <ActionIcon size={13} style={{ color: ac.color }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="log-name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {log.user_nom || log.user_login || 'Système'}
+                          <span className="log-badge" style={{ background: ac.bg, color: ac.color }}>{log.action_label}</span>
+                        </div>
+                        <div className="log-desc" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {log.description}{log.university_name ? ` · ${log.university_name}` : ''}
+                        </div>
+                      </div>
+                      <div className="log-time">
+                        {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        <br />
+                        <span style={{ fontSize: '0.65rem' }}>
+                          {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+        </div>
+
+        {/* Raccourcis */}
+        <div className="section-card" style={{ height: 'fit-content' }}>
+          <div className="section-head">
+            <div>
+              <div className="section-title">Accès rapide</div>
+              <div className="section-sub">Navigation directe</div>
+            </div>
+          </div>
+          <div className="shortcut-grid">
+            {[
+              { href: '/administrateur/universites',    label: 'Universités',    icon: Building2,     color: '#1AAFE6', bg: 'rgba(26,175,230,0.08)'  },
+              { href: '/administrateur/etablissements', label: 'Établ.',         icon: GraduationCap, color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)' },
+              { href: '/administrateur/comptes',        label: 'Comptes',        icon: Users,         color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
+              { href: '/administrateur/abonnements',    label: 'Licences',       icon: Globe,         color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+              { href: '/administrateur/logs',           label: 'Logs',           icon: Activity,      color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
+              { href: '/administrateur/parametrage',    label: 'Paramétrage',    icon: ShieldCheck,   color: '#14b8a6', bg: 'rgba(20,184,166,0.08)' },
+            ].map(s => {
+              const Icon = s.icon
+              return (
+                <Link key={s.href} href={s.href} className="shortcut">
+                  <div className="shortcut-icon" style={{ background: s.bg }}>
+                    <Icon size={15} style={{ color: s.color }} />
+                  </div>
+                  <span className="shortcut-label">{s.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Abonnés actifs */}
+          <div style={{ margin: '0 1rem 1rem', padding: '0.875rem 1rem', background: 'linear-gradient(135deg, rgba(26,175,230,0.05) 0%, rgba(139,92,246,0.05) 100%)', borderRadius: 10, border: '1px solid rgba(26,175,230,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Abonnés actifs</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1AAFE6', letterSpacing: '-0.03em' }}>
+                {loading ? '—' : stats?.abonnes_actifs ?? 0}
+                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#94a3b8', marginLeft: 4 }}>/ {stats?.universities ?? 0}</span>
               </div>
-            ))}
-      </Card>
+            </div>
+            <div style={{ marginTop: 8, height: 4, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 99,
+                background: 'linear-gradient(90deg, #1AAFE6, #8b5cf6)',
+                width: `${stats?.universities ? Math.round((stats.abonnes_actifs / stats.universities) * 100) : 0}%`,
+                transition: 'width 0.6s ease',
+              }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ height: '2rem' }} />
     </div>
   )
 }

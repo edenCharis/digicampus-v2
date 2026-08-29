@@ -77,69 +77,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebarW = collapsed ? 72 : 256
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F4F8' }}>
+    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
       <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        body { overflow-x: hidden; }
+
         /* ── Topbar ── */
         .dc-topbar {
           height: 56px;
           background: #fff;
-          border-bottom: 1px solid #E4EAF0;
+          border-bottom: 1px solid #f1f5f9;
           display: flex; align-items: center;
-          padding: 0 1.25rem; gap: 0.875rem;
+          padding: 0 1.5rem; gap: 1rem;
           position: fixed; top: 0; z-index: 30;
           right: 0;
           left: ${sidebarW}px;
           transition: left 0.22s cubic-bezier(.4,0,.2,1);
-          box-shadow: 0 1px 0 rgba(14,51,88,0.04), 0 2px 8px rgba(14,51,88,0.03);
         }
         @media (max-width: 1023px) { .dc-topbar { left: 0 !important; } }
 
-        /* ── Toggle button ── */
         .dc-toggle {
           background: none; border: none; cursor: pointer;
-          color: #94a3b8; padding: 7px; border-radius: 9px;
+          color: #cbd5e1; padding: 6px; border-radius: 8px;
           display: flex; align-items: center;
           transition: background 0.15s, color 0.15s; flex-shrink: 0;
         }
-        .dc-toggle:hover { background: #F0F4F8; color: #0E3358; }
+        .dc-toggle:hover { background: #f8fafc; color: #334155; }
 
-        /* ── Separator ── */
-        .dc-sep {
-          width: 1px; height: 20px; background: #E4EAF0; flex-shrink: 0;
-        }
+        .dc-sep { width: 1px; height: 18px; background: #f1f5f9; flex-shrink: 0; }
 
-        /* ── Breadcrumb ── */
         .dc-breadcrumb {
-          display: flex; align-items: center; gap: 0.5rem;
-          font-size: 0.875rem; overflow: hidden;
+          display: flex; align-items: center; gap: 0.375rem;
+          font-size: 0.875rem; overflow: hidden; min-width: 0;
         }
-        .dc-brand-crumb {
-          color: #94a3b8; font-size: 0.8125rem; white-space: nowrap;
-          font-weight: 500;
-        }
-        .dc-crumb-sep { color: #CBD5E1; font-size: 0.8rem; }
+        .dc-brand-crumb { color: #cbd5e1; font-size: 0.8rem; white-space: nowrap; font-weight: 500; }
+        .dc-crumb-sep { color: #e2e8f0; font-size: 0.75rem; }
         .dc-module-name {
-          font-weight: 700; color: #0D1B2E; font-size: 0.9rem;
-          letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          font-weight: 600; color: #0f172a; font-size: 0.875rem;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        /* ── Right side ── */
         .dc-topbar-right {
-          margin-left: auto; display: flex; align-items: center; gap: 0.625rem; flex-shrink: 0;
+          margin-left: auto; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
         }
         .dc-bell {
-          position: relative; background: none; border: none;
-          color: #94a3b8; cursor: pointer; padding: 8px; border-radius: 9px;
-          display: flex; align-items: center; transition: all 0.15s;
+          background: none; border: none; color: #cbd5e1; cursor: pointer;
+          padding: 7px; border-radius: 8px; display: flex; align-items: center;
+          transition: all 0.15s;
         }
-        .dc-bell:hover { background: #F0F4F8; color: #0E3358; }
+        .dc-bell:hover { background: #f8fafc; color: #475569; }
 
         .dc-user-pill {
           display: flex; align-items: center; gap: 0.5rem;
-          padding: 4px 10px 4px 4px;
-          border-radius: 24px;
-          background: #F0F4F8;
-          border: 1px solid #E4EAF0;
+          padding: 3px 10px 3px 3px; border-radius: 24px;
+          background: #f8fafc; border: 1px solid #f1f5f9;
+          cursor: default;
         }
         .dc-user-avatar {
           width: 28px; height: 28px; border-radius: 50%;
@@ -149,22 +141,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
         .dc-user-name { font-size: 0.8rem; font-weight: 600; color: #1e293b; }
         .dc-role-badge {
-          font-size: 0.62rem; font-weight: 700; color: #1AAFE6;
-          background: rgba(26,175,230,0.1); border-radius: 20px;
-          padding: 0.1rem 0.45rem; text-transform: uppercase; letter-spacing: 0.05em;
+          font-size: 0.6rem; font-weight: 700; color: #1AAFE6;
+          background: rgba(26,175,230,0.08); border-radius: 20px;
+          padding: 0.1rem 0.5rem; text-transform: uppercase; letter-spacing: 0.06em;
         }
         @media (max-width: 580px) { .dc-user-name, .dc-role-badge { display: none; } }
 
         /* ── Content ── */
         .dc-content {
           margin-left: ${sidebarW}px;
-          padding-top: 56px; min-height: 100vh;
+          padding-top: 56px;
+          min-height: 100vh;
+          background: #fff;
           transition: margin-left 0.22s cubic-bezier(.4,0,.2,1);
         }
         @media (max-width: 1023px) { .dc-content { margin-left: 0 !important; } }
 
-        .dc-page { padding: 1.5rem 1.75rem; }
-        @media (max-width: 640px) { .dc-page { padding: 1rem; } }
+        .dc-page { padding: 2rem 2rem; max-width: 100%; overflow-x: hidden; }
+        @media (max-width: 768px) { .dc-page { padding: 1.25rem 1rem; } }
 
         /* ── Access denied ── */
         .dc-denied {
@@ -172,14 +166,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           min-height: 60vh; text-align: center; gap: 1rem;
         }
         .dc-denied-icon {
-          width: 72px; height: 72px; border-radius: 20px;
-          background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15);
+          width: 64px; height: 64px; border-radius: 18px;
+          background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.12);
           display: flex; align-items: center; justify-content: center;
         }
-        .dc-denied h2 { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin: 0; }
-        .dc-denied p { font-size: 0.875rem; color: #64748b; margin: 0; max-width: 320px; line-height: 1.6; }
+        .dc-denied h2 { font-size: 1.125rem; font-weight: 700; color: #1e293b; margin: 0; }
+        .dc-denied p { font-size: 0.875rem; color: #64748b; margin: 0; max-width: 300px; line-height: 1.6; }
         .dc-denied-btn {
-          padding: 0.55rem 1.5rem; background: #1AAFE6; color: #fff; border: none;
+          padding: 0.5rem 1.5rem; background: #1AAFE6; color: #fff; border: none;
           border-radius: 9px; font-size: 0.875rem; font-weight: 600; cursor: pointer;
           transition: background 0.15s;
         }

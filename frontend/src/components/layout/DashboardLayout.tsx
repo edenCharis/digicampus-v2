@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { PanelLeftClose, PanelLeftOpen, Bell, Lock } from 'lucide-react'
+import Link from 'next/link'
+import { PanelLeftClose, PanelLeftOpen, Bell, Lock, User, LogOut, ChevronDown } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { AppUser } from '@/types'
 import { ROLE_LABELS } from '@/lib/utils'
@@ -16,6 +17,7 @@ const MODULE_LABELS: Record<string, string> = {
   '/administrateur/logs':           'Logs d\'activité',
   '/administrateur/parametrage':    'Paramétrage',
   '/administrateur':                'Tableau de bord',
+  '/compte':         'Mon compte',
   '/scolarite':      'Scolarité',
   '/doyen':          'Doyen',
   '/enseignant':     'Enseignants',
@@ -45,6 +47,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen]       = useState(false)
   const [collapsed, setCollapsed]         = useState(false)
   const [denied, setDenied]               = useState(false)
+  const [profileOpen, setProfileOpen]     = useState(false)
+  const profileRef                        = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('dc_user')
@@ -56,6 +60,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const saved = localStorage.getItem('dc_sidebar_collapsed')
     if (saved === 'true') setCollapsed(true)
   }, [router, pathname])
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   function toggleCollapse() {
     const next = !collapsed
@@ -127,12 +141,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
         .dc-bell:hover { background: #f8fafc; color: #475569; }
 
+        .dc-profile-wrap { position: relative; }
         .dc-user-pill {
           display: flex; align-items: center; gap: 0.5rem;
-          padding: 3px 10px 3px 3px; border-radius: 24px;
+          padding: 3px 8px 3px 3px; border-radius: 24px;
           background: #f8fafc; border: 1px solid #f1f5f9;
-          cursor: default;
+          cursor: pointer; transition: background 0.15s, border-color 0.15s;
         }
+        .dc-user-pill:hover { background: #f1f5f9; border-color: #e2e8f0; }
         .dc-user-avatar {
           width: 28px; height: 28px; border-radius: 50%;
           background: linear-gradient(135deg, #0E3358 0%, #1AAFE6 100%);
@@ -145,7 +161,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           background: rgba(26,175,230,0.08); border-radius: 20px;
           padding: 0.1rem 0.5rem; text-transform: uppercase; letter-spacing: 0.06em;
         }
+        .dc-chevron { color: #cbd5e1; transition: transform 0.2s; }
+        .dc-chevron.open { transform: rotate(180deg); }
         @media (max-width: 580px) { .dc-user-name, .dc-role-badge { display: none; } }
+
+        /* Profile dropdown */
+        .dc-profile-dropdown {
+          position: absolute; top: calc(100% + 8px); right: 0;
+          background: #fff; border: 1px solid #f1f5f9;
+          border-radius: 12px; box-shadow: 0 8px 24px rgba(15,23,42,0.1), 0 2px 6px rgba(15,23,42,0.05);
+          min-width: 200px; overflow: hidden; z-index: 100;
+          animation: dropIn 0.15s ease;
+        }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .dc-profile-header {
+          padding: 0.875rem 1rem 0.75rem;
+          border-bottom: 1px solid #f8fafc;
+        }
+        .dc-profile-name { font-size: 0.875rem; font-weight: 700; color: #0f172a; }
+        .dc-profile-role { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
+        .dc-profile-item {
+          display: flex; align-items: center; gap: 0.625rem;
+          padding: 0.625rem 1rem; font-size: 0.8125rem; font-weight: 500;
+          color: #475569; text-decoration: none; cursor: pointer;
+          transition: background 0.12s; background: none; border: none; width: 100%; text-align: left;
+        }
+        .dc-profile-item:hover { background: #f8fafc; color: #0f172a; }
+        .dc-profile-item.danger:hover { background: rgba(239,68,68,0.05); color: #ef4444; }
+        .dc-profile-divider { height: 1px; background: #f8fafc; margin: 2px 0; }
 
         /* ── Content ── */
         .dc-content {
@@ -218,12 +261,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button className="dc-bell" aria-label="Notifications">
               <Bell size={16} />
             </button>
-            <div className="dc-user-pill">
-              <div className="dc-user-avatar">
-                {(user.nom || user.login)[0].toUpperCase()}
+            <div className="dc-profile-wrap" ref={profileRef}>
+              <div className="dc-user-pill" onClick={() => setProfileOpen(v => !v)}>
+                <div className="dc-user-avatar">
+                  {(user.nom || user.login)[0].toUpperCase()}
+                </div>
+                <span className="dc-user-name">{user.nom || user.login}</span>
+                <span className="dc-role-badge">{ROLE_LABELS[user.role] ?? user.role}</span>
+                <ChevronDown size={13} className={`dc-chevron${profileOpen ? ' open' : ''}`} />
               </div>
-              <span className="dc-user-name">{user.nom || user.login}</span>
-              <span className="dc-role-badge">{ROLE_LABELS[user.role] ?? user.role}</span>
+              {profileOpen && (
+                <div className="dc-profile-dropdown">
+                  <div className="dc-profile-header">
+                    <div className="dc-profile-name">{user.nom || user.login}</div>
+                    <div className="dc-profile-role">{ROLE_LABELS[user.role] ?? user.role} · {user.etablissement_name ?? 'Digital Campus'}</div>
+                  </div>
+                  <Link href="/compte" className="dc-profile-item" onClick={() => setProfileOpen(false)}>
+                    <User size={15} /> Mon compte
+                  </Link>
+                  <div className="dc-profile-divider" />
+                  <button className="dc-profile-item danger" onClick={() => { setProfileOpen(false); handleLogout() }}>
+                    <LogOut size={15} /> Déconnexion
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

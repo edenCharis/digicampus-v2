@@ -40,16 +40,16 @@ class ECUEAdmin(admin.ModelAdmin):
 
 @admin.register(Etudiant)
 class EtudiantAdmin(admin.ModelAdmin):
-    list_display = ['matricule', 'nom', 'prenom', 'sexe', 'email', 'etablissement']
-    list_filter = ['etablissement', 'sexe']
-    search_fields = ['matricule', 'nom', 'prenom', 'email']
+    list_display = ['code', 'nom', 'prenom', 'sexe', 'statut', 'email', 'etablissement']
+    list_filter = ['etablissement', 'sexe', 'statut']
+    search_fields = ['code', 'nom', 'prenom', 'email']
 
 
 @admin.register(Inscription)
 class InscriptionAdmin(admin.ModelAdmin):
-    list_display = ['etudiant', 'classe', 'annee', 'statut', 'est_valide', 'date_inscription']
-    list_filter = ['annee', 'statut', 'est_valide']
-    search_fields = ['etudiant__matricule', 'etudiant__nom']
+    list_display = ['etudiant', 'classe', 'annee', 'type_inscription', 'statut_paiement', 'est_valide', 'date_inscription']
+    list_filter = ['annee', 'type_inscription', 'est_valide', 'statut_paiement']
+    search_fields = ['etudiant__code', 'etudiant__nom']
 
 
 admin.site.register(Cycle)

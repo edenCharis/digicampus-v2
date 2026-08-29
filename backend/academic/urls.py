@@ -14,4 +14,6 @@ urlpatterns = [
     path('etudiants/', views.EtudiantListView.as_view(), name='etudiants'),
     path('etudiants/<int:pk>/', views.EtudiantDetailView.as_view(), name='etudiant-detail'),
     path('inscriptions/', views.InscriptionListView.as_view(), name='inscriptions'),
+    path('inscriptions/create/', views.InscriptionCreateView.as_view(), name='inscription-create'),
+    path('inscriptions/reinscription/', views.ReinscriptionView.as_view(), name='reinscription'),
 ]

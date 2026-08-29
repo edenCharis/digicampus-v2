@@ -1,10 +1,11 @@
+import uuid
 from django.db import models
 from accounts.models import Etablissement
 
 
 class AnneeAcademique(models.Model):
     etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='annees')
-    libelle = models.CharField(max_length=20)  # e.g. "2024-2025"
+    libelle = models.CharField(max_length=20)   # e.g. "2024-2025"
     is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -46,7 +47,7 @@ class Classe(models.Model):
     etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='classes')
     specialite = models.ForeignKey(Specialite, on_delete=models.CASCADE, related_name='classes')
     libelle = models.CharField(max_length=200)
-    niveau = models.CharField(max_length=20)  # L1, L2, L3, M1, M2…
+    niveau = models.CharField(max_length=20)   # L1, L2, L3, M1, M2…
     effectif = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -97,30 +98,78 @@ class TypeDiplome(models.Model):
         return self.libelle
 
 
+def generate_code():
+    return uuid.uuid4().hex[:8].upper()
+
+
 class Etudiant(models.Model):
+    """Miroir de la table `candidat` du Digital Campus original."""
+
     class Sexe(models.TextChoices):
         M = 'M', 'Masculin'
         F = 'F', 'Féminin'
 
+    class Statut(models.TextChoices):
+        EN_COURS = 'en cours', 'En cours'
+        ADMIS = 'admis', 'Admis'
+        REFUSE = 'refusé', 'Refusé'
+        INSCRIT = 'inscrit', 'Inscrit'
+
+    class Mention(models.TextChoices):
+        PASSABLE = 'Passable', 'Passable'
+        ASSEZ_BIEN = 'Assez-bien', 'Assez-bien'
+        BIEN = 'Bien', 'Bien'
+        TRES_BIEN = 'Très-bien', 'Très-bien'
+
+    class Bac(models.TextChoices):
+        A = 'A', 'A'
+        C = 'C', 'C'
+        D = 'D', 'D'
+        E = 'E', 'E'
+        F6 = 'F6', 'F6'
+        H = 'H', 'H'
+        R1 = 'R1', 'R1'
+        R5 = 'R5', 'R5'
+        R6 = 'R6', 'R6'
+
+    # Identifiant unique généré (équivalent du `code` dans l'original)
+    code = models.CharField(max_length=20, unique=True, default=generate_code)
     etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='etudiants')
-    matricule = models.CharField(max_length=50)
+
+    # Infos personnelles
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
     sexe = models.CharField(max_length=1, choices=Sexe.choices, default=Sexe.M)
-    date_naissance = models.DateField(null=True, blank=True)
-    lieu_naissance = models.CharField(max_length=100, blank=True)
+    date_nais = models.DateField(null=True, blank=True)
+    lieu_nais = models.CharField(max_length=100, blank=True)
     nationalite = models.CharField(max_length=100, blank=True)
     email = models.EmailField(blank=True)
     tel = models.CharField(max_length=30, blank=True)
     photo = models.ImageField(upload_to='etudiants/', blank=True, null=True)
+
+    # Baccalauréat
+    bac = models.CharField(max_length=5, choices=Bac.choices, blank=True)
+    moyenne_bac = models.FloatField(null=True, blank=True)
+    annee_bac = models.CharField(max_length=4, blank=True)
+    mention = models.CharField(max_length=20, choices=Mention.choices, blank=True)
+
+    # Orientation
+    cycle = models.CharField(max_length=50, blank=True)   # Licence, Master, Doctorat
+    specialite = models.ForeignKey(Specialite, on_delete=models.SET_NULL, null=True, blank=True, related_name='etudiants')
+
+    # Statut de la candidature
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_COURS)
+    statut_paiement_inscription = models.BooleanField(default=False)
+    statut_paiement_concours = models.BooleanField(default=False)
+    etat = models.BooleanField(default=True)   # actif ou archivé
+    date_candidature = models.DateField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('etablissement', 'matricule')
         ordering = ['nom', 'prenom']
 
     def __str__(self):
-        return f"{self.matricule} — {self.nom} {self.prenom}"
+        return f"{self.code} — {self.nom} {self.prenom}"
 
     @property
     def nom_complet(self):
@@ -128,7 +177,11 @@ class Etudiant(models.Model):
 
 
 class Inscription(models.Model):
-    class Statut(models.TextChoices):
+    """Miroir de la table `inscription` du Digital Campus original.
+    Lien : etudiant → classe + annee + etab.
+    """
+
+    class TypeInscription(models.TextChoices):
         NOUVEAU = 'nouveau', 'Nouveau'
         REINSCRIT = 'reinscrit', 'Réinscrit'
         TRANSFERT = 'transfert', 'Transfert'
@@ -136,14 +189,16 @@ class Inscription(models.Model):
     etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name='inscriptions')
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='inscriptions')
     annee = models.ForeignKey(AnneeAcademique, on_delete=models.CASCADE, related_name='inscriptions')
-    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.NOUVEAU)
-    date_inscription = models.DateField(auto_now_add=True)
+    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='inscriptions')
+    type_inscription = models.CharField(max_length=20, choices=TypeInscription.choices, default=TypeInscription.NOUVEAU)
+    statut_paiement = models.BooleanField(default=False)   # frais d'inscription payés
     montant_paye = models.DecimalField(max_digits=12, decimal_places=0, default=0)
-    est_valide = models.BooleanField(default=False)
+    date_inscription = models.DateField(auto_now_add=True)
+    est_valide = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ('etudiant', 'annee')
         ordering = ['-date_inscription']
 
     def __str__(self):
-        return f"{self.etudiant} — {self.classe} ({self.annee})"
+        return f"{self.etudiant.code} — {self.classe} ({self.annee})"

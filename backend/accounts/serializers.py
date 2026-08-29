@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import University, Etablissement, User
+from .models import University, Etablissement, User, Abonnement, ActivityLog
 
 
 class UniversitySerializer(serializers.ModelSerializer):
@@ -62,12 +62,58 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class AbonnementSerializer(serializers.ModelSerializer):
+    university_name = serializers.CharField(source='university.libelle', read_only=True)
+    university_code = serializers.CharField(source='university.code', read_only=True)
+    user_count      = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Abonnement
+        fields = [
+            'id', 'university', 'university_name', 'university_code',
+            'statut', 'date_debut', 'date_fin', 'max_users',
+            'modules', 'notes', 'user_count', 'updated_at',
+        ]
+
+    def get_user_count(self, obj):
+        return User.objects.filter(university=obj.university).count()
+
+
+class ActivityLogSerializer(serializers.ModelSerializer):
+    user_login = serializers.CharField(source='user.login', read_only=True)
+    user_nom   = serializers.CharField(source='user.nom', read_only=True)
+    university_name = serializers.CharField(source='university.libelle', read_only=True)
+    action_label    = serializers.CharField(source='get_action_display', read_only=True)
+
+    class Meta:
+        model = ActivityLog
+        fields = [
+            'id', 'user', 'user_login', 'user_nom',
+            'action', 'action_label', 'description',
+            'ip', 'university', 'university_name', 'created_at',
+        ]
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = 'login'
 
     def validate(self, attrs):
         data = super().validate(attrs)
         user = self.user
+        # Record login activity
+        try:
+            request = self.context.get('request')
+            ip = None
+            if request:
+                x_fwd = request.META.get('HTTP_X_FORWARDED_FOR')
+                ip = x_fwd.split(',')[0].strip() if x_fwd else request.META.get('REMOTE_ADDR')
+            ActivityLog.objects.create(
+                user=user, action=ActivityLog.Action.LOGIN,
+                description=f"Connexion — rôle : {user.role}",
+                ip=ip, university=user.university,
+            )
+        except Exception:
+            pass
         data['user'] = {
             'id': user.id,
             'login': user.login,

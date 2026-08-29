@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+import json
 
 
 class University(models.Model):
@@ -93,3 +94,51 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.login} ({self.role})"
+
+
+class Abonnement(models.Model):
+    class Statut(models.TextChoices):
+        ACTIF    = 'actif',    'Actif'
+        ESSAI    = 'essai',    'Période d\'essai'
+        EXPIRE   = 'expiré',   'Expiré'
+        SUSPENDU = 'suspendu', 'Suspendu'
+
+    university   = models.OneToOneField(University, on_delete=models.CASCADE, related_name='abonnement')
+    statut       = models.CharField(max_length=20, choices=Statut.choices, default=Statut.ESSAI)
+    date_debut   = models.DateField(null=True, blank=True)
+    date_fin     = models.DateField(null=True, blank=True)
+    max_users    = models.PositiveIntegerField(default=50)
+    modules      = models.JSONField(default=list)
+    notes        = models.TextField(blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.university.code} — {self.statut}"
+
+
+class ActivityLog(models.Model):
+    class Action(models.TextChoices):
+        LOGIN         = 'login',         'Connexion'
+        LOGOUT        = 'logout',        'Déconnexion'
+        CREATE_USER   = 'create_user',   'Création compte'
+        UPDATE_USER   = 'update_user',   'Modification compte'
+        DELETE_USER   = 'delete_user',   'Suppression compte'
+        CREATE_INSC   = 'create_insc',   'Nouvelle inscription'
+        REINSC        = 'reinscription', 'Réinscription'
+        CREATE_CLASSE = 'create_classe', 'Création classe'
+        CREATE_UE     = 'create_ue',     'Création UE'
+        SYSTEM        = 'system',        'Système'
+
+    user        = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='logs')
+    action      = models.CharField(max_length=30, choices=Action.choices)
+    description = models.TextField(blank=True)
+    ip          = models.GenericIPAddressField(null=True, blank=True)
+    university  = models.ForeignKey(University, on_delete=models.SET_NULL, null=True, blank=True, related_name='logs')
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.action} — {self.user} — {self.created_at:%d/%m/%Y %H:%M}"

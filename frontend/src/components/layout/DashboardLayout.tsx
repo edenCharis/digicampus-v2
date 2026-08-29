@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Menu, Bell, Search } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { AppUser } from '@/types'
 import { ROLE_LABELS } from '@/lib/utils'
+import { ROLE_HOME, canAccess } from '@/lib/permissions'
 import { logout as apiLogout, clearTokens } from '@/lib/api'
 
 interface DashboardLayoutProps {
@@ -13,8 +14,10 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [user, setUser] = useState<AppUser | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [denied, setDenied] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('dc_user')
@@ -22,8 +25,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       router.replace('/login')
       return
     }
-    setUser(JSON.parse(stored))
-  }, [router])
+    const u: AppUser = JSON.parse(stored)
+    setUser(u)
+
+    // Role-based route protection
+    if (!canAccess(u.role, pathname)) {
+      setDenied(true)
+    } else {
+      setDenied(false)
+    }
+  }, [router, pathname])
 
   async function handleLogout() {
     const tokens = localStorage.getItem('dc_tokens')
@@ -36,12 +47,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (!user) return null
 
   return (
-    <div className="dc-layout">
+    <div style={{ minHeight: '100vh', background: '#f0f4f8' }}>
       <style>{`
-        .dc-layout {
-          min-height: 100vh;
-          background: #f0f4f8;
-        }
         .dc-topbar {
           height: 56px;
           background: #ffffff;
@@ -68,9 +75,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           padding: 6px;
           border-radius: 8px;
           display: none;
+          align-items: center;
         }
         @media (max-width: 1023px) {
-          .topbar-hamburger { display: flex; align-items: center; }
+          .topbar-hamburger { display: flex; }
         }
         .topbar-hamburger:hover { background: #f1f5f9; color: #1e293b; }
         .topbar-search {
@@ -96,10 +104,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           outline: none;
           color: #1e293b;
         }
-        .topbar-search input:focus {
-          border-color: #1AAFE6;
-          background: #fff;
-        }
+        .topbar-search input:focus { border-color: #1AAFE6; background: #fff; }
         .topbar-right {
           margin-left: auto;
           display: flex;
@@ -116,11 +121,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           border-radius: 8px;
         }
         .topbar-bell:hover { background: #f1f5f9; color: #1e293b; }
-        .topbar-user {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
+        .topbar-user { display: flex; align-items: center; gap: 0.5rem; }
         .topbar-avatar {
           width: 32px;
           height: 32px;
@@ -134,24 +135,32 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           font-weight: 600;
           flex-shrink: 0;
         }
-        .topbar-user-info { line-height: 1.3; }
-        .topbar-user-name {
-          font-size: 0.8125rem;
+        .topbar-user-name { font-size: 0.8125rem; font-weight: 600; color: #1e293b; line-height: 1.3; }
+        .topbar-user-role { font-size: 0.7rem; color: #1AAFE6; font-weight: 500; }
+        .dc-content { margin-left: 250px; padding-top: 56px; min-height: 100vh; }
+        .dc-page { padding: 1.5rem; }
+        .access-denied {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 60vh;
+          text-align: center;
+          gap: 1rem;
+          color: #64748b;
+        }
+        .access-denied h2 { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0; }
+        .access-denied p { font-size: 0.9rem; margin: 0; }
+        .btn-go-home {
+          padding: 0.5rem 1.25rem;
+          background: #1AAFE6;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.875rem;
           font-weight: 600;
-          color: #1e293b;
-        }
-        .topbar-user-role {
-          font-size: 0.7rem;
-          color: #1AAFE6;
-          font-weight: 500;
-        }
-        .dc-content {
-          margin-left: 250px;
-          padding-top: 56px;
-          min-height: 100vh;
-        }
-        .dc-page {
-          padding: 1.5rem;
+          cursor: pointer;
+          margin-top: 0.5rem;
         }
       `}</style>
 
@@ -185,9 +194,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
             <div className="topbar-user">
               <div className="topbar-avatar">
-                {user.nom ? user.nom[0].toUpperCase() : user.login[0].toUpperCase()}
+                {(user.nom || user.login)[0].toUpperCase()}
               </div>
-              <div className="topbar-user-info">
+              <div>
                 <div className="topbar-user-name">{user.nom || user.login}</div>
                 <div className="topbar-user-role">{ROLE_LABELS[user.role] ?? user.role}</div>
               </div>
@@ -196,7 +205,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         <main className="dc-page">
-          {children}
+          {denied ? (
+            <div className="access-denied">
+              <div style={{ fontSize: 48 }}>🔒</div>
+              <h2>Accès refusé</h2>
+              <p>Vous n&apos;avez pas les droits pour accéder à cette page.</p>
+              <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                Rôle actuel : <strong style={{ color: '#1AAFE6' }}>{ROLE_LABELS[user.role]}</strong>
+              </p>
+              <button
+                className="btn-go-home"
+                onClick={() => router.push(ROLE_HOME[user.role] ?? '/dashboard')}
+              >
+                Retour à mon espace
+              </button>
+            </div>
+          ) : children}
         </main>
       </div>
     </div>

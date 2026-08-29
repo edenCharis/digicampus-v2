@@ -1,6 +1,7 @@
 from rest_framework import generics, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from accounts.permissions import AcademicReadPermission, EtudiantPermission, IsAdminOrScolarite
 from .models import (
     AnneeAcademique, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
 )
@@ -69,6 +70,7 @@ class DashboardStatsView(APIView):
 
 class AnneeListView(generics.ListCreateAPIView):
     serializer_class = AnneeAcademiqueSerializer
+    permission_classes = [IsAdminOrScolarite]
 
     def get_queryset(self):
         return scoped_qs(self.request, AnneeAcademique.objects.all())
@@ -76,6 +78,7 @@ class AnneeListView(generics.ListCreateAPIView):
 
 class SpecialiteListView(generics.ListCreateAPIView):
     serializer_class = SpecialiteSerializer
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         return scoped_qs(self.request, Specialite.objects.select_related('cycle'))
@@ -83,6 +86,7 @@ class SpecialiteListView(generics.ListCreateAPIView):
 
 class ClasseListView(generics.ListCreateAPIView):
     serializer_class = ClasseSerializer
+    permission_classes = [AcademicReadPermission]
     filter_backends = [filters.SearchFilter]
     search_fields = ['libelle', 'niveau']
 
@@ -99,6 +103,7 @@ class ClasseListView(generics.ListCreateAPIView):
 
 class UEListView(generics.ListCreateAPIView):
     serializer_class = UESerializer
+    permission_classes = [AcademicReadPermission]
     filter_backends = [filters.SearchFilter]
     search_fields = ['code', 'libelle']
 
@@ -128,6 +133,7 @@ class UEDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class EtudiantListView(generics.ListCreateAPIView):
     serializer_class = EtudiantSerializer
+    permission_classes = [EtudiantPermission]
     filter_backends = [filters.SearchFilter]
     search_fields = ['matricule', 'nom', 'prenom', 'email']
 
@@ -137,6 +143,7 @@ class EtudiantListView(generics.ListCreateAPIView):
 
 class EtudiantDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = EtudiantSerializer
+    permission_classes = [EtudiantPermission]
 
     def get_queryset(self):
         return scoped_qs(self.request, Etudiant.objects.all())
@@ -167,6 +174,7 @@ class ClasseDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class InscriptionListView(generics.ListCreateAPIView):
     serializer_class = InscriptionSerializer
+    permission_classes = [EtudiantPermission]
     filter_backends = [filters.SearchFilter]
     search_fields = ['etudiant__matricule', 'etudiant__nom', 'etudiant__prenom']
 

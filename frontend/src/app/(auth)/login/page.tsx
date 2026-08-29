@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, GraduationCap, Lock, User } from 'lucide-react'
 import { login as apiLogin } from '@/lib/api'
-import { ROLE_HOME } from '@/lib/utils'
+import { ROLE_HOME } from '@/lib/permissions'
 import { AppUser } from '@/types'
 
 export default function LoginPage() {

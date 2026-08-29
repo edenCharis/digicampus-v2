@@ -2,37 +2,37 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  GraduationCap, LayoutDashboard, Users, BookOpen, ClipboardList,
+  GraduationCap, Users, BookOpen, ClipboardList,
   UserCheck, Award, FileText, BarChart2, CreditCard, BookMarked,
   ShieldCheck, Briefcase, ChevronRight, LogOut, X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ROLE_NAV } from '@/lib/permissions'
 import type { Role } from '@/types'
 
 interface NavItem {
   label: string
   href: string
   icon: React.ReactNode
-  roles?: Role[]
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Tableau de bord', href: '/dashboard', icon: <LayoutDashboard size={18} /> },
-  { label: 'Administration', href: '/administrateur', icon: <ShieldCheck size={18} />, roles: ['administrateur'] },
-  { label: 'Scolarité', href: '/scolarite', icon: <GraduationCap size={18} />, roles: ['scolarité'] },
-  { label: 'Doyen', href: '/doyen', icon: <Briefcase size={18} />, roles: ['doyen'] },
-  { label: 'Enseignants', href: '/enseignant', icon: <Users size={18} />, roles: ['enseignant', 'administrateur'] },
-  { label: 'Professeurs', href: '/professeur', icon: <UserCheck size={18} />, roles: ['professeur'] },
-  { label: 'Cours', href: '/cours', icon: <BookOpen size={18} />, roles: ['cours', 'administrateur'] },
-  { label: 'Inscriptions', href: '/inscription', icon: <ClipboardList size={18} />, roles: ['inscription', 'scolarité'] },
-  { label: 'Anonymat', href: '/anonymat', icon: <ShieldCheck size={18} />, roles: ['anonymat'] },
-  { label: 'DAARHSPE', href: '/daarhspe', icon: <FileText size={18} />, roles: ['daarhspe'] },
-  { label: 'Gestion des Notes', href: '/gesnote', icon: <Award size={18} />, roles: ['gesnote'] },
-  { label: 'Soutenance', href: '/soutenance', icon: <BookMarked size={18} />, roles: ['soutenance'] },
-  { label: 'Suivi', href: '/suivi', icon: <BarChart2 size={18} />, roles: ['suivi'] },
-  { label: 'Caisse', href: '/caisse', icon: <CreditCard size={18} />, roles: ['caisse'] },
-  { label: 'PVD', href: '/pvd', icon: <FileText size={18} />, roles: ['pvd'] },
+const ALL_NAV_ITEMS: NavItem[] = [
+  { label: 'Administration', href: '/administrateur', icon: <ShieldCheck size={18} /> },
+  { label: 'Scolarité', href: '/scolarite', icon: <GraduationCap size={18} /> },
+  { label: 'Doyen', href: '/doyen', icon: <Briefcase size={18} /> },
+  { label: 'Enseignants', href: '/enseignant', icon: <Users size={18} /> },
+  { label: 'Professeurs', href: '/professeur', icon: <UserCheck size={18} /> },
+  { label: 'Cours', href: '/cours', icon: <BookOpen size={18} /> },
+  { label: 'Inscriptions', href: '/inscription', icon: <ClipboardList size={18} /> },
+  { label: 'Anonymat', href: '/anonymat', icon: <ShieldCheck size={18} /> },
+  { label: 'DAARHSPE', href: '/daarhspe', icon: <FileText size={18} /> },
+  { label: 'Gestion des Notes', href: '/gesnote', icon: <Award size={18} /> },
+  { label: 'Soutenance', href: '/soutenance', icon: <BookMarked size={18} /> },
+  { label: 'Suivi', href: '/suivi', icon: <BarChart2 size={18} /> },
+  { label: 'Caisse', href: '/caisse', icon: <CreditCard size={18} /> },
+  { label: 'PVD', href: '/pvd', icon: <FileText size={18} /> },
 ]
+
 
 interface SidebarProps {
   role?: Role
@@ -48,9 +48,8 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname()
 
-  const items = NAV_ITEMS.filter(
-    (item) => !item.roles || !role || item.roles.includes(role),
-  )
+  const allowedRoutes = role ? ROLE_NAV[role] ?? [] : []
+  const items = ALL_NAV_ITEMS.filter(item => allowedRoutes.includes(item.href))
 
   return (
     <>

@@ -22,19 +22,5 @@ export const ROLE_LABELS: Record<string, string> = {
   pvd: 'PVD',
 }
 
-export const ROLE_HOME: Record<string, string> = {
-  administrateur: '/administrateur',
-  'scolarité': '/scolarite',
-  doyen: '/doyen',
-  enseignant: '/enseignant',
-  professeur: '/professeur',
-  cours: '/cours',
-  inscription: '/inscription',
-  anonymat: '/anonymat',
-  daarhspe: '/daarhspe',
-  gesnote: '/gesnote',
-  soutenance: '/soutenance',
-  suivi: '/suivi',
-  caisse: '/caisse',
-  pvd: '/pvd',
-}
+// Re-export from permissions for backward compat
+export { ROLE_HOME } from './permissions'

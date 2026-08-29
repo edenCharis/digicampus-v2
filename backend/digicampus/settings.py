@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -62,15 +63,15 @@ DATABASES = {
     }
 }
 
-# PostgreSQL config (VPS):
+# PostgreSQL config (VPS) — set via environment variables or .env file:
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'digicampus_v2',
-#         'USER': 'digicampus_user',
-#         'PASSWORD': 'MotDePasseFort2024!',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
+#         'NAME': os.environ.get('DB_NAME', 'digicampus_v2'),
+#         'USER': os.environ.get('DB_USER', 'digicampus_user'),
+#         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+#         'HOST': os.environ.get('DB_HOST', 'localhost'),
+#         'PORT': os.environ.get('DB_PORT', '5432'),
 #     }
 # }
 

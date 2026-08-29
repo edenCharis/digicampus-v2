@@ -4,8 +4,6 @@ import { User, Mail, Lock, CheckCircle2, AlertTriangle, Pencil, X, Eye, EyeOff, 
 import { apiFetch, apiUpload } from '@/lib/api'
 import { ROLE_LABELS } from '@/lib/utils'
 
-const MEDIA_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')
-
 interface Me {
   id: number; login: string; nom: string; email: string; photo: string | null; role: string;
   university_name: string | null; etablissement_name: string | null; created_at: string;
@@ -67,7 +65,10 @@ export default function ComptePage() {
 
   function syncToLocalStorage(updated: Me) {
     const stored = localStorage.getItem('dc_user')
-    if (stored) localStorage.setItem('dc_user', JSON.stringify({ ...JSON.parse(stored), photo: updated.photo }))
+    if (stored) {
+      localStorage.setItem('dc_user', JSON.stringify({ ...JSON.parse(stored), photo: updated.photo }))
+      window.dispatchEvent(new CustomEvent('dc-user-updated'))
+    }
   }
 
   async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -95,7 +96,7 @@ export default function ComptePage() {
   }
 
   const initials = me ? (me.nom || me.login).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'
-  const photoUrl = me?.photo ? (me.photo.startsWith('http') ? me.photo : `${MEDIA_BASE}${me.photo}`) : null
+  const photoUrl = me?.photo ?? null
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>

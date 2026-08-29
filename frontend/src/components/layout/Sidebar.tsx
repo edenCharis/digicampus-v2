@@ -49,8 +49,6 @@ interface SidebarProps {
   collapsed?: boolean
 }
 
-const MEDIA_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')
-
 export default function Sidebar({ role, nom, photo, etablissement, onLogout, open = true, onClose, collapsed = false }: SidebarProps) {
   const pathname = usePathname()
   const allowedRoutes = role ? ROLE_NAV[role] ?? [] : []
@@ -265,7 +263,7 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
           <div className="sb-user-card">
             <div className="sb-avatar">
               {photo
-                ? <img src={photo.startsWith('http') ? photo : `${MEDIA_BASE}${photo}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ? <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : initials
               }
             </div>

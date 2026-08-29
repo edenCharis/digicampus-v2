@@ -42,10 +42,10 @@ class LogoutView(APIView):
 
 class MeView(APIView):
     def get(self, request):
-        return Response(UserSerializer(request.user).data)
+        return Response(UserSerializer(request.user, context={'request': request}).data)
 
     def patch(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(request.user, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -63,14 +63,14 @@ class UploadPhotoView(APIView):
             return Response({'error': 'Le fichier doit être une image.'}, status=status.HTTP_400_BAD_REQUEST)
         request.user.photo = photo
         request.user.save()
-        return Response(UserSerializer(request.user).data)
+        return Response(UserSerializer(request.user, context={'request': request}).data)
 
     def delete(self, request):
         if request.user.photo:
             request.user.photo.delete(save=False)
             request.user.photo = None
             request.user.save()
-        return Response(UserSerializer(request.user).data)
+        return Response(UserSerializer(request.user, context={'request': request}).data)
 
 
 class ChangePasswordView(APIView):

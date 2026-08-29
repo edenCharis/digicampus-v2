@@ -71,6 +71,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  useEffect(() => {
+    function handleUserUpdate() {
+      const stored = localStorage.getItem('dc_user')
+      if (stored) setUser(JSON.parse(stored))
+    }
+    window.addEventListener('dc-user-updated', handleUserUpdate)
+    return () => window.removeEventListener('dc-user-updated', handleUserUpdate)
+  }, [])
+
   function toggleCollapse() {
     const next = !collapsed
     setCollapsed(next)
@@ -267,7 +276,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="dc-user-pill" onClick={() => setProfileOpen(v => !v)}>
                 <div className="dc-user-avatar">
                   {user.photo
-                    ? <img src={user.photo.startsWith('http') ? user.photo : `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')}${user.photo}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    ? <img src={user.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                     : (user.nom || user.login)[0].toUpperCase()
                   }
                 </div>
@@ -280,7 +289,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="dc-profile-header" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#0E3358,#1AAFE6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#fff', overflow: 'hidden', flexShrink: 0 }}>
                       {user.photo
-                        ? <img src={user.photo.startsWith('http') ? user.photo : `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace('/api', '')}${user.photo}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={user.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : (user.nom || user.login)[0].toUpperCase()
                       }
                     </div>

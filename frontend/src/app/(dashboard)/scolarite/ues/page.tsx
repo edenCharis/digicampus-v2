@@ -194,8 +194,14 @@ export default function UEsPage() {
       }
       setOpen(false); load()
     } catch (err: unknown) {
-      const e = err as Record<string, string[]>
-      setError(Object.values(e).flat().join(' ') || 'Erreur lors de l\'enregistrement')
+      const e = err as Record<string, unknown>
+      const msgs: string[] = []
+      for (const [k, v] of Object.entries(e)) {
+        const label = k === 'non_field_errors' ? '' : `${k}: `
+        const values = Array.isArray(v) ? v.join(', ') : String(v)
+        msgs.push(`${label}${values}`)
+      }
+      setError(msgs.join(' — ') || 'Erreur lors de l\'enregistrement')
     } finally { setSaving(false) }
   }
 

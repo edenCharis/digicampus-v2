@@ -1,13 +1,8 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
-import { Users, ClipboardList, BookOpen, LayoutGrid, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
+import { Users, ClipboardList, BookOpen, LayoutGrid, AlertCircle } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
-interface NiveauRow { niveau: string; count: number }
-interface RecentInsc {
-  id: number; etudiant_nom: string; etudiant_code: string
-  classe: string; type: string; paiement: boolean; date: string
-}
 interface SuiviPeriode {
   periode: string  // "2026-08" ou "2026-S2"
   paye: number; partiel: number; attente: number; total: number
@@ -18,7 +13,6 @@ interface Stats {
   inscriptions_nouveau: number; inscriptions_reinscrit: number; inscriptions_transfert: number
   suivi_mois: SuiviPeriode; suivi_semestre: SuiviPeriode
   etudiants_inscrit: number; etudiants_en_cours: number; etudiants_admis: number; etudiants_refuse: number
-  niveaux: NiveauRow[]; recent_inscriptions: RecentInsc[]
 }
 
 const STYLE = (
@@ -85,42 +79,8 @@ const STYLE = (
     .leg-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
     .leg-val { margin-left:auto; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
 
-    /* Recent inscriptions */
-    .rec-row { display:flex; align-items:center; gap:.75rem; padding:.5rem 0; border-bottom:1px solid #f1f5f9; }
-    .rec-row:last-child { border-bottom:none; }
-    .rec-av { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.68rem; font-weight:700; color:#fff; flex-shrink:0; }
-    .rec-name { font-size:.8125rem; font-weight:600; color:#0f172a; }
-    .rec-sub { font-size:.72rem; color:#94a3b8; margin-top:1px; }
-    .rec-badge { display:inline-flex; align-items:center; padding:.2rem .5rem; border-radius:99px; font-size:.68rem; font-weight:700; white-space:nowrap; }
-    .rec-pay { display:flex; align-items:center; gap:.3rem; font-size:.72rem; margin-left:auto; flex-shrink:0; }
-
-    /* Bottom grid */
-    .bot-row { display:grid; grid-template-columns:2fr 1fr; gap:1rem; }
-    @media(max-width:768px){ .bot-row { grid-template-columns:1fr; } }
-
-    /* Niveau bars */
-    .niv-bar { display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem; }
-    .niv-bar:last-child { margin-bottom:0; }
-    .niv-code { font-size:.75rem; font-weight:700; min-width:28px; text-align:center; padding:.15rem .4rem; border-radius:6px; }
-    .niv-track { flex:1; height:10px; background:#f1f5f9; border-radius:99px; overflow:hidden; }
-    .niv-fill { height:100%; border-radius:99px; }
-    .niv-n { font-size:.75rem; font-weight:700; color:#475569; min-width:20px; text-align:right; font-variant-numeric:tabular-nums; }
   `}</style>
 )
-
-const COLORS = ['#1AAFE6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
-function av(nom: string) { return COLORS[nom.charCodeAt(0) % COLORS.length] }
-
-const NIVEAU_C: Record<string, { bg: string; color: string }> = {
-  L1:{bg:'rgba(26,175,230,.15)',color:'#1AAFE6'},
-  L2:{bg:'rgba(14,165,233,.15)',color:'#0ea5e9'},
-  L3:{bg:'rgba(6,182,212,.15)',color:'#06b6d4'},
-  M1:{bg:'rgba(139,92,246,.15)',color:'#8b5cf6'},
-  M2:{bg:'rgba(124,58,237,.15)',color:'#7c3aed'},
-  D1:{bg:'rgba(245,158,11,.15)',color:'#f59e0b'},
-  D2:{bg:'rgba(217,119,6,.15)',color:'#d97706'},
-  D3:{bg:'rgba(180,83,9,.15)',color:'#b45309'},
-}
 
 function DonutRing({ data }: { data: { label: string; value: number; color: string }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0)
@@ -318,68 +278,6 @@ export default function ScolariteDashboard() {
           </div>
         </div>
 
-        {/* Bottom row */}
-        <div className="bot-row">
-
-          {/* Recent inscriptions */}
-          <div className="card">
-            <div className="card-title">Dernières inscriptions</div>
-            {loading && <p style={{ fontSize: '.8rem', color: '#94a3b8' }}>Chargement…</p>}
-            {!loading && (s?.recent_inscriptions ?? []).length === 0 && (
-              <p style={{ fontSize: '.8rem', color: '#94a3b8', padding: '1rem 0', textAlign: 'center' }}>Aucune inscription pour l&apos;année active</p>
-            )}
-            {(s?.recent_inscriptions ?? []).map(r => {
-              const typeC: Record<string, { bg: string; color: string }> = {
-                nouveau:   { bg: 'rgba(26,175,230,0.1)',  color: '#1AAFE6' },
-                reinscrit: { bg: 'rgba(16,185,129,0.1)',  color: '#10b981' },
-                transfert: { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
-              }
-              const tc = typeC[r.type] ?? { bg: '#f1f5f9', color: '#64748b' }
-              return (
-                <div key={r.id} className="rec-row">
-                  <div className="rec-av" style={{ background: av(r.etudiant_nom) }}>
-                    {r.etudiant_nom.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="rec-name">{r.etudiant_nom}</div>
-                    <div className="rec-sub">{r.classe} · <span style={{ fontFamily: 'monospace', fontSize: '.7rem' }}>{r.etudiant_code}</span></div>
-                  </div>
-                  <span className="rec-badge" style={{ background: tc.bg, color: tc.color }}>
-                    {r.type === 'nouveau' ? 'Nouveau' : r.type === 'reinscrit' ? 'Réinscrit' : 'Transfert'}
-                  </span>
-                  <div className="rec-pay">
-                    {r.paiement
-                      ? <CheckCircle2 size={14} color="#10b981" />
-                      : <Clock size={14} color="#f59e0b" />
-                    }
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Classes par niveau */}
-          <div className="card">
-            <div className="card-title">Classes par niveau</div>
-            {loading && <p style={{ fontSize: '.8rem', color: '#94a3b8' }}>Chargement…</p>}
-            {!loading && (s?.niveaux ?? []).length === 0 && (
-              <p style={{ fontSize: '.8rem', color: '#94a3b8', padding: '1rem 0', textAlign: 'center' }}>Aucune classe</p>
-            )}
-            {(s?.niveaux ?? []).map(n => {
-              const max = Math.max(...(s?.niveaux ?? []).map(x => x.count), 1)
-              const nc = NIVEAU_C[n.niveau] ?? { bg: '#f1f5f9', color: '#64748b' }
-              return (
-                <div key={n.niveau} className="niv-bar">
-                  <span className="niv-code" style={{ background: nc.bg, color: nc.color }}>{n.niveau}</span>
-                  <div className="niv-track">
-                    <div className="niv-fill" style={{ width: `${(n.count / max) * 100}%`, background: nc.color }} />
-                  </div>
-                  <span className="niv-n">{n.count}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
 
       </div>
     </>

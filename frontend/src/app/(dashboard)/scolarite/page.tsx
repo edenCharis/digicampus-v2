@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
-import { Users, ClipboardList, BookOpen, LayoutGrid, CheckCircle2, Clock, CreditCard, UserX, GraduationCap } from 'lucide-react'
+import { Users, ClipboardList, BookOpen, LayoutGrid, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 interface NiveauRow { niveau: string; count: number }
@@ -8,11 +8,15 @@ interface RecentInsc {
   id: number; etudiant_nom: string; etudiant_code: string
   classe: string; type: string; paiement: boolean; date: string
 }
+interface SuiviPeriode {
+  periode: string  // "2026-08" ou "2026-S2"
+  paye: number; partiel: number; attente: number; total: number
+}
 interface Stats {
   etudiants: number; classes: number; ues: number; inscriptions: number
   annee_active: string | null
   inscriptions_nouveau: number; inscriptions_reinscrit: number; inscriptions_transfert: number
-  paiements_ok: number; paiements_attente: number
+  suivi_mois: SuiviPeriode; suivi_semestre: SuiviPeriode
   etudiants_inscrit: number; etudiants_en_cours: number; etudiants_admis: number; etudiants_refuse: number
   niveaux: NiveauRow[]; recent_inscriptions: RecentInsc[]
 }
@@ -62,12 +66,16 @@ const STYLE = (
     .bar-fill { height:100%; border-radius:99px; transition:width .5s ease; }
     .bar-count { font-size:.75rem; font-weight:700; color:#475569; min-width:28px; text-align:right; font-variant-numeric:tabular-nums; }
 
-    /* Stat split (paiements) */
-    .split { display:flex; gap:.75rem; margin-top:.25rem; }
-    .split-item { flex:1; background:#f8fafc; border-radius:10px; padding:.75rem .875rem; text-align:center; }
-    .split-val { font-size:1.5rem; font-weight:800; color:#0f172a; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
-    .split-label { font-size:.7rem; color:#94a3b8; margin-top:.25rem; }
-    .split-dot { width:8px; height:8px; border-radius:50%; margin:0 auto .375rem; }
+    /* Suivi mensuel */
+    .suivi-tabs { display:flex; gap:.375rem; margin-bottom:1rem; }
+    .suivi-tab { flex:1; padding:.375rem .5rem; border:1px solid #e2e8f0; border-radius:7px; font-size:.72rem; font-weight:600; cursor:pointer; background:#f8fafc; color:#64748b; text-align:center; transition:all .15s; }
+    .suivi-tab.active { background:#1AAFE6; color:#fff; border-color:#1AAFE6; }
+    .suivi-stat { display:flex; align-items:center; gap:.625rem; padding:.5rem 0; border-bottom:1px solid #f1f5f9; }
+    .suivi-stat:last-child { border-bottom:none; }
+    .suivi-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .suivi-lbl { font-size:.8rem; color:#475569; flex:1; }
+    .suivi-n { font-size:.875rem; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
+    .suivi-pct { font-size:.7rem; color:#94a3b8; margin-left:.25rem; }
 
     /* Donut-style ring (CSS only) */
     .ring-wrap { display:flex; align-items:center; gap:1rem; }
@@ -192,9 +200,22 @@ export default function ScolariteDashboard() {
   }, [])
 
   const s = stats
+  const [suiviMode, setSuiviMode] = useState<'mois' | 'semestre'>('mois')
 
-  const paiTotal = (s?.paiements_ok ?? 0) + (s?.paiements_attente ?? 0)
-  const paiPct = paiTotal > 0 ? Math.round(((s?.paiements_ok ?? 0) / paiTotal) * 100) : 0
+  const suivi: SuiviPeriode | undefined = suiviMode === 'mois' ? s?.suivi_mois : s?.suivi_semestre
+  const suiviPct = suivi && suivi.total > 0 ? Math.round((suivi.paye / suivi.total) * 100) : 0
+  const suiviNonPayes = suivi ? Math.max(0, suivi.total - suivi.paye - suivi.partiel - suivi.attente) : 0
+
+  function formatPeriode(p: string | undefined) {
+    if (!p) return ''
+    if (p.includes('-S')) {
+      const [y, s] = p.split('-')
+      return `Semestre ${s.replace('S', '')} · ${y}`
+    }
+    const [y, m] = p.split('-')
+    const d = new Date(Number(y), Number(m) - 1, 1)
+    return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  }
 
   return (
     <>
@@ -259,30 +280,41 @@ export default function ScolariteDashboard() {
             ]} />
           </div>
 
-          {/* Paiements */}
+          {/* Suivi frais scolarité — dynamique par période */}
           <div className="card">
-            <div className="card-title">Paiements</div>
-            <div style={{ marginBottom: '.75rem' }}>
+            <div className="card-title">Suivi des frais</div>
+            <div className="suivi-tabs">
+              <button className={`suivi-tab${suiviMode === 'mois' ? ' active' : ''}`} onClick={() => setSuiviMode('mois')}>Ce mois</button>
+              <button className={`suivi-tab${suiviMode === 'semestre' ? ' active' : ''}`} onClick={() => setSuiviMode('semestre')}>Semestre</button>
+            </div>
+            <p style={{ fontSize: '.72rem', color: '#94a3b8', marginBottom: '.75rem' }}>
+              {loading ? 'Chargement…' : formatPeriode(suivi?.periode)}
+            </p>
+            {/* Progress bar */}
+            <div style={{ marginBottom: '.875rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.375rem' }}>
-                <span style={{ fontSize: '.775rem', color: '#475569' }}>Taux de paiement</span>
-                <span style={{ fontSize: '.775rem', fontWeight: 700, color: '#10b981' }}>{loading ? '—' : `${paiPct}%`}</span>
+                <span style={{ fontSize: '.775rem', color: '#475569' }}>Taux à jour</span>
+                <span style={{ fontSize: '.775rem', fontWeight: 700, color: '#10b981' }}>{loading ? '—' : `${suiviPct}%`}</span>
               </div>
               <div style={{ height: 8, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${paiPct}%`, background: '#10b981', borderRadius: 99, transition: 'width .6s ease' }} />
+                <div style={{ height: '100%', width: `${suiviPct}%`, background: '#10b981', borderRadius: 99, transition: 'width .6s ease' }} />
               </div>
             </div>
-            <div className="split">
-              <div className="split-item">
-                <div className="split-dot" style={{ background: '#10b981' }} />
-                <div className="split-val" style={{ color: '#10b981' }}>{loading ? '—' : s?.paiements_ok ?? 0}</div>
-                <div className="split-label">Payés</div>
+            {[
+              { label: 'À jour',       n: suivi?.paye    ?? 0, color: '#10b981' },
+              { label: 'Partiel',      n: suivi?.partiel ?? 0, color: '#f59e0b' },
+              { label: 'En attente',   n: suivi?.attente ?? 0, color: '#ef4444' },
+              { label: 'Sans données', n: suiviNonPayes,       color: '#cbd5e1' },
+            ].map(row => (
+              <div key={row.label} className="suivi-stat">
+                <div className="suivi-dot" style={{ background: row.color }} />
+                <span className="suivi-lbl">{row.label}</span>
+                <span className="suivi-n">{loading ? '—' : row.n}</span>
+                {!loading && suivi && suivi.total > 0 && (
+                  <span className="suivi-pct">({Math.round((row.n / suivi.total) * 100)}%)</span>
+                )}
               </div>
-              <div className="split-item">
-                <div className="split-dot" style={{ background: '#f59e0b' }} />
-                <div className="split-val" style={{ color: '#f59e0b' }}>{loading ? '—' : s?.paiements_attente ?? 0}</div>
-                <div className="split-label">En attente</div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 

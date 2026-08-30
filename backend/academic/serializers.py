@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     AnneeAcademique, Cycle, Parcours, Specialite, Classe, UE, ECUE,
-    Etudiant, Inscription, Semestre, Niveau,
+    Etudiant, Inscription, Semestre, Niveau, PaiementScolarite,
 )
 
 
@@ -44,6 +44,21 @@ class NiveauSerializer(serializers.ModelSerializer):
     class Meta:
         model = Niveau
         fields = ['id', 'code', 'libelle', 'ordre', 'etablissement']
+
+
+class PaiementScolariteSerializer(serializers.ModelSerializer):
+    etudiant_nom  = serializers.SerializerMethodField()
+    etudiant_code = serializers.CharField(source='etudiant.code', read_only=True)
+
+    class Meta:
+        model = PaiementScolarite
+        fields = ['id', 'etudiant', 'etudiant_code', 'etudiant_nom', 'annee', 'etablissement',
+                  'periode', 'montant_du', 'montant_paye', 'statut', 'date_paiement', 'note',
+                  'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+    def get_etudiant_nom(self, obj):
+        return f"{obj.etudiant.nom} {obj.etudiant.prenom}"
 
 
 class ClasseSerializer(serializers.ModelSerializer):

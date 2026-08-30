@@ -4,12 +4,13 @@ from rest_framework.response import Response
 from accounts.permissions import AcademicReadPermission, EtudiantPermission, IsAdminOrScolarite, IsAdmin
 from .models import (
     AnneeAcademique, Cycle, Parcours, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
-    Semestre, Niveau,
+    Semestre, Niveau, PaiementScolarite,
 )
 from .serializers import (
     AnneeAcademiqueSerializer, CycleSerializer, ParcoursSerializer, SpecialiteSerializer,
     ClasseSerializer, UESerializer, ECUESerializer, EtudiantSerializer, EtudiantListSerializer,
     InscriptionSerializer, InscriptionCreateSerializer, SemestreSerializer, NiveauSerializer,
+    PaiementScolariteSerializer,
 )
 from accounts.models import User, University, Etablissement
 
@@ -67,9 +68,37 @@ class DashboardStatsView(APIView):
             for row in insc_qs.values('type_inscription').annotate(cnt=Count('id'))
         }
 
-        # Paiements
-        payees     = insc_qs.filter(statut_paiement=True).count()
-        non_payees = insc_qs.filter(statut_paiement=False).count()
+        # Suivi paiements scolarite — période courante (mois en cours)
+        from datetime import date as _date
+        today = _date.today()
+        periode_mois = today.strftime('%Y-%m')          # ex: "2026-08"
+        sem = 'S1' if today.month <= 6 else 'S2'
+        periode_sem  = f"{today.year}-{sem}"            # ex: "2026-S2"
+
+        pai_qs_mois = PaiementScolarite.objects.filter(
+            etablissement_id__in=etab_ids, periode=periode_mois
+        )
+        pai_qs_sem = PaiementScolarite.objects.filter(
+            etablissement_id__in=etab_ids, periode=periode_sem
+        )
+
+        # Nombre total d'inscrits actifs (année active) pour calculer le taux
+        inscrits_total = insc_qs.count()
+
+        suivi_mois = {
+            'periode': periode_mois,
+            'paye':    pai_qs_mois.filter(statut='paye').count(),
+            'partiel': pai_qs_mois.filter(statut='partiel').count(),
+            'attente': pai_qs_mois.filter(statut='attente').count(),
+            'total':   inscrits_total,
+        }
+        suivi_sem = {
+            'periode': periode_sem,
+            'paye':    pai_qs_sem.filter(statut='paye').count(),
+            'partiel': pai_qs_sem.filter(statut='partiel').count(),
+            'attente': pai_qs_sem.filter(statut='attente').count(),
+            'total':   inscrits_total,
+        }
 
         # Students by statut
         statut_counts = {
@@ -109,8 +138,8 @@ class DashboardStatsView(APIView):
             'inscriptions_nouveau':    type_counts.get('nouveau', 0),
             'inscriptions_reinscrit':  type_counts.get('reinscrit', 0),
             'inscriptions_transfert':  type_counts.get('transfert', 0),
-            'paiements_ok':            payees,
-            'paiements_attente':       non_payees,
+            'suivi_mois':              suivi_mois,
+            'suivi_semestre':          suivi_sem,
             'etudiants_inscrit':       statut_counts.get('inscrit', 0),
             'etudiants_en_cours':      statut_counts.get('en cours', 0),
             'etudiants_admis':         statut_counts.get('admis', 0),
@@ -207,6 +236,29 @@ class NiveauDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return scoped_qs(self.request, Niveau.objects.all())
+
+
+class PaiementScolariteListView(generics.ListCreateAPIView):
+    serializer_class = PaiementScolariteSerializer
+    permission_classes = [IsAdminOrScolarite]
+
+    def get_queryset(self):
+        qs = scoped_qs(self.request, PaiementScolarite.objects.select_related('etudiant', 'annee'))
+        periode = self.request.query_params.get('periode')
+        statut  = self.request.query_params.get('statut')
+        annee   = self.request.query_params.get('annee')
+        if periode: qs = qs.filter(periode=periode)
+        if statut:  qs = qs.filter(statut=statut)
+        if annee:   qs = qs.filter(annee_id=annee)
+        return qs
+
+
+class PaiementScolariteDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PaiementScolariteSerializer
+    permission_classes = [IsAdminOrScolarite]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, PaiementScolarite.objects.select_related('etudiant', 'annee'))
 
 
 class ParcoursListView(generics.ListCreateAPIView):

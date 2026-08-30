@@ -244,3 +244,32 @@ class Inscription(models.Model):
 
     def __str__(self):
         return f"{self.etudiant.code} — {self.classe} ({self.annee})"
+
+
+class PaiementScolarite(models.Model):
+    """Suivi mensuel ou semestriel des frais de scolarité par étudiant."""
+
+    class Statut(models.TextChoices):
+        PAYE    = 'paye',    'Payé'
+        PARTIEL = 'partiel', 'Partiel'
+        ATTENTE = 'attente', 'En attente'
+
+    etudiant      = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name='paiements_scolarite')
+    annee         = models.ForeignKey(AnneeAcademique, on_delete=models.CASCADE, related_name='paiements_scolarite')
+    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='paiements_scolarite')
+    # Format: "2026-08" (mensuel) ou "2026-S1" (semestriel)
+    periode       = models.CharField(max_length=10)
+    montant_du    = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    montant_paye  = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    statut        = models.CharField(max_length=20, choices=Statut.choices, default=Statut.ATTENTE)
+    date_paiement = models.DateField(null=True, blank=True)
+    note          = models.TextField(blank=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+    updated_at    = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('etudiant', 'annee', 'periode')
+        ordering = ['-periode']
+
+    def __str__(self):
+        return f"{self.etudiant.code} — {self.periode} ({self.statut})"

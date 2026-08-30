@@ -7,12 +7,12 @@ const PAGE_SIZE = 25
 
 interface UE   { id: number; code: string; libelle: string; niveau: string; semestre: string }
 interface ECUE {
-  id: number; code: string; libelle: string; credits: number; coefficient: number
+  id: number; code: string; libelle: string; credits: number
   ue: number; ue_code: string; ue_libelle: string
 }
 interface ApiList<T> { count: number; results: T[] }
 
-function emptyForm() { return { code: '', libelle: '', credits: '0', coefficient: '1', ue: '' } }
+function emptyForm() { return { code: '', libelle: '', credits: '0', ue: '' } }
 
 const STYLE = (
   <style>{`
@@ -84,7 +84,7 @@ export default function ECUEsPage() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState<ECUE | null>(null)
-  const [form, setForm]       = useState(emptyForm())
+  const [form, setForm]       = useState<{ code: string; libelle: string; credits: string; ue: string }>(emptyForm())
   const [saving, setSaving]   = useState(false)
   const [err, setErr]         = useState<string | null>(null)
   const [delTarget, setDelTarget] = useState<ECUE | null>(null)
@@ -123,14 +123,15 @@ export default function ECUEsPage() {
   }
   function openEdit(e: ECUE) {
     setEditing(e)
-    setForm({ code: e.code, libelle: e.libelle, credits: String(e.credits), coefficient: String(e.coefficient), ue: String(e.ue) })
+    setForm({ code: e.code, libelle: e.libelle, credits: String(e.credits), ue: String(e.ue) })
     setErr(null); setOpen(true)
   }
 
   async function handleSave(ev: React.FormEvent) {
     ev.preventDefault(); setSaving(true); setErr(null)
     try {
-      const body = { code: form.code, libelle: form.libelle, credits: Number(form.credits), coefficient: Number(form.coefficient), ue: Number(form.ue) }
+      const credits = Number(form.credits)
+      const body = { code: form.code, libelle: form.libelle, credits, coefficient: credits, ue: Number(form.ue) }
       if (editing) await apiFetch(`/ecues/${editing.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       else await apiFetch('/ecues/', { method: 'POST', body: JSON.stringify(body) })
       setOpen(false); load()
@@ -196,15 +197,14 @@ export default function ECUEsPage() {
                 <th>Libellé ECUE</th>
                 <th>UE parente</th>
                 <th>Crédits</th>
-                <th>Coef.</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="sc-empty">Chargement…</td></tr>
+                <tr><td colSpan={5} className="sc-empty">Chargement…</td></tr>
               ) : paged.length === 0 ? (
-                <tr><td colSpan={6} className="sc-empty">
+                <tr><td colSpan={5} className="sc-empty">
                   <Layers size={32} color="#e2e8f0" style={{ margin: '0 auto .5rem', display: 'block' }} />
                   {filterUE ? 'Aucun ECUE pour cette UE' : 'Aucun ECUE'}
                 </td></tr>
@@ -219,7 +219,6 @@ export default function ECUEsPage() {
                     <div className="sc-sub" style={{ marginTop: 3 }}>{ec.ue_libelle}</div>
                   </td>
                   <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{ec.credits}</td>
-                  <td style={{ color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>{ec.coefficient}</td>
                   <td>
                     <div className="sc-actions">
                       <button className="sc-btn" onClick={() => openEdit(ec)} title="Modifier"><Pencil size={14} /></button>
@@ -273,15 +272,9 @@ export default function ECUEsPage() {
                     <input required value={form.libelle} onChange={e => setForm({ ...form, libelle: e.target.value })} placeholder="Intitulé de l'élément" />
                   </div>
                 </div>
-                <div className="fl-grid2">
-                  <div className="fl">
-                    <label>Crédits</label>
-                    <input type="number" min="0" step="0.5" value={form.credits} onChange={e => setForm({ ...form, credits: e.target.value })} />
-                  </div>
-                  <div className="fl">
-                    <label>Coefficient</label>
-                    <input type="number" min="0" step="0.5" value={form.coefficient} onChange={e => setForm({ ...form, coefficient: e.target.value })} />
-                  </div>
+                <div className="fl">
+                  <label>Crédits</label>
+                  <input type="number" min="0" step="0.5" value={form.credits} onChange={e => setForm({ ...form, credits: e.target.value })} />
                 </div>
               </div>
               <div className="mo-foot">

@@ -1,17 +1,182 @@
 'use client'
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Users, ClipboardList, BookOpen, LayoutGrid, TrendingUp, ArrowRight } from 'lucide-react'
+import { useEffect, useState, useMemo } from 'react'
+import { Users, ClipboardList, BookOpen, LayoutGrid, CheckCircle2, Clock, CreditCard, UserX, GraduationCap } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
+interface NiveauRow { niveau: string; count: number }
+interface RecentInsc {
+  id: number; etudiant_nom: string; etudiant_code: string
+  classe: string; type: string; paiement: boolean; date: string
+}
 interface Stats {
-  etudiants: number
-  classes: number
-  ues: number
-  inscriptions: number
+  etudiants: number; classes: number; ues: number; inscriptions: number
   annee_active: string | null
+  inscriptions_nouveau: number; inscriptions_reinscrit: number; inscriptions_transfert: number
+  paiements_ok: number; paiements_attente: number
+  etudiants_inscrit: number; etudiants_en_cours: number; etudiants_admis: number; etudiants_refuse: number
+  niveaux: NiveauRow[]; recent_inscriptions: RecentInsc[]
+}
+
+const STYLE = (
+  <style>{`
+    .db { max-width: 1100px; margin: 0 auto; }
+
+    /* Header */
+    .db-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.75rem; flex-wrap:wrap; gap:.75rem; }
+    .db-title { font-size:1.375rem; font-weight:800; color:#0f172a; letter-spacing:-.03em; margin:0; }
+    .db-sub { font-size:.8125rem; color:#94a3b8; margin:.25rem 0 0; }
+    .db-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(26,175,230,0.1); color:#1AAFE6; border:1px solid rgba(26,175,230,0.2); border-radius:99px; padding:.35rem .875rem; font-size:.75rem; font-weight:700; white-space:nowrap; }
+    .db-badge-dot { width:7px; height:7px; border-radius:50%; background:#1AAFE6; }
+
+    /* KPI row */
+    .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.25rem; }
+    @media(max-width:900px){ .kpi-row { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:560px){ .kpi-row { grid-template-columns:1fr 1fr; } }
+
+    .kpi { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1.25rem 1.25rem 1rem; position:relative; overflow:hidden; }
+    .kpi::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:99px 99px 0 0; }
+    .kpi.blue::after { background:#1AAFE6; }
+    .kpi.violet::after { background:#8b5cf6; }
+    .kpi.green::after { background:#10b981; }
+    .kpi.amber::after { background:#f59e0b; }
+    .kpi-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:.875rem; }
+    .kpi-val { font-size:2rem; font-weight:800; color:#0f172a; letter-spacing:-.04em; line-height:1; font-variant-numeric:tabular-nums; }
+    .kpi-label { font-size:.75rem; font-weight:600; color:#64748b; margin-top:.375rem; }
+    .kpi-sub { font-size:.7rem; color:#94a3b8; margin-top:.25rem; }
+    .kpi-skel { background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:6px; height:2rem; width:60%; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* Middle grid */
+    .mid-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:1.25rem; }
+    @media(max-width:900px){ .mid-row { grid-template-columns:1fr 1fr; } }
+    @media(max-width:560px){ .mid-row { grid-template-columns:1fr; } }
+
+    .card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1.125rem 1.25rem; }
+    .card-title { font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.07em; margin-bottom:1rem; }
+
+    /* Bar chart */
+    .bar-item { display:flex; align-items:center; gap:.625rem; margin-bottom:.625rem; }
+    .bar-item:last-child { margin-bottom:0; }
+    .bar-label { font-size:.775rem; color:#475569; min-width:90px; flex-shrink:0; }
+    .bar-track { flex:1; height:7px; background:#f1f5f9; border-radius:99px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:99px; transition:width .5s ease; }
+    .bar-count { font-size:.75rem; font-weight:700; color:#475569; min-width:28px; text-align:right; font-variant-numeric:tabular-nums; }
+
+    /* Stat split (paiements) */
+    .split { display:flex; gap:.75rem; margin-top:.25rem; }
+    .split-item { flex:1; background:#f8fafc; border-radius:10px; padding:.75rem .875rem; text-align:center; }
+    .split-val { font-size:1.5rem; font-weight:800; color:#0f172a; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+    .split-label { font-size:.7rem; color:#94a3b8; margin-top:.25rem; }
+    .split-dot { width:8px; height:8px; border-radius:50%; margin:0 auto .375rem; }
+
+    /* Donut-style ring (CSS only) */
+    .ring-wrap { display:flex; align-items:center; gap:1rem; }
+    .ring-svg { flex-shrink:0; }
+    .ring-legend { display:flex; flex-direction:column; gap:.4rem; flex:1; }
+    .leg-row { display:flex; align-items:center; gap:.5rem; font-size:.775rem; color:#475569; }
+    .leg-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .leg-val { margin-left:auto; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
+
+    /* Recent inscriptions */
+    .rec-row { display:flex; align-items:center; gap:.75rem; padding:.5rem 0; border-bottom:1px solid #f1f5f9; }
+    .rec-row:last-child { border-bottom:none; }
+    .rec-av { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.68rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .rec-name { font-size:.8125rem; font-weight:600; color:#0f172a; }
+    .rec-sub { font-size:.72rem; color:#94a3b8; margin-top:1px; }
+    .rec-badge { display:inline-flex; align-items:center; padding:.2rem .5rem; border-radius:99px; font-size:.68rem; font-weight:700; white-space:nowrap; }
+    .rec-pay { display:flex; align-items:center; gap:.3rem; font-size:.72rem; margin-left:auto; flex-shrink:0; }
+
+    /* Bottom grid */
+    .bot-row { display:grid; grid-template-columns:2fr 1fr; gap:1rem; }
+    @media(max-width:768px){ .bot-row { grid-template-columns:1fr; } }
+
+    /* Niveau bars */
+    .niv-bar { display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem; }
+    .niv-bar:last-child { margin-bottom:0; }
+    .niv-code { font-size:.75rem; font-weight:700; min-width:28px; text-align:center; padding:.15rem .4rem; border-radius:6px; }
+    .niv-track { flex:1; height:10px; background:#f1f5f9; border-radius:99px; overflow:hidden; }
+    .niv-fill { height:100%; border-radius:99px; }
+    .niv-n { font-size:.75rem; font-weight:700; color:#475569; min-width:20px; text-align:right; font-variant-numeric:tabular-nums; }
+  `}</style>
+)
+
+const COLORS = ['#1AAFE6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
+function av(nom: string) { return COLORS[nom.charCodeAt(0) % COLORS.length] }
+
+const NIVEAU_C: Record<string, { bg: string; color: string }> = {
+  L1:{bg:'rgba(26,175,230,.15)',color:'#1AAFE6'},
+  L2:{bg:'rgba(14,165,233,.15)',color:'#0ea5e9'},
+  L3:{bg:'rgba(6,182,212,.15)',color:'#06b6d4'},
+  M1:{bg:'rgba(139,92,246,.15)',color:'#8b5cf6'},
+  M2:{bg:'rgba(124,58,237,.15)',color:'#7c3aed'},
+  D1:{bg:'rgba(245,158,11,.15)',color:'#f59e0b'},
+  D2:{bg:'rgba(217,119,6,.15)',color:'#d97706'},
+  D3:{bg:'rgba(180,83,9,.15)',color:'#b45309'},
+}
+
+function DonutRing({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  if (total === 0) return <p style={{ fontSize: '.8rem', color: '#94a3b8', textAlign: 'center', padding: '1rem 0' }}>Aucune donnée</p>
+
+  const r = 40, cx = 50, cy = 50
+  const circ = 2 * Math.PI * r
+  let offset = 0
+  const slices = data.map(d => {
+    const pct = total > 0 ? d.value / total : 0
+    const dash = pct * circ
+    const s = { offset, dash, color: d.color, label: d.label, value: d.value }
+    offset += dash
+    return s
+  })
+
+  return (
+    <div className="ring-wrap">
+      <svg className="ring-svg" viewBox="0 0 100 100" width={80} height={80}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={12} />
+        {slices.map((s, i) => (
+          <circle key={i} cx={cx} cy={cy} r={r} fill="none"
+            stroke={s.color} strokeWidth={12}
+            strokeDasharray={`${s.dash} ${circ - s.dash}`}
+            strokeDashoffset={-s.offset + circ / 4}
+            style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+          />
+        ))}
+        <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
+          style={{ fontSize: '14px', fontWeight: 800, fill: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>{total}</text>
+      </svg>
+      <div className="ring-legend">
+        {data.map(d => (
+          <div key={d.label} className="leg-row">
+            <div className="leg-dot" style={{ background: d.color }} />
+            <span>{d.label}</span>
+            <span className="leg-val">{d.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BarChart({ items, color }: { items: { label: string; value: number }[]; color: string }) {
+  const max = Math.max(...items.map(i => i.value), 1)
+  return (
+    <div>
+      {items.map(i => (
+        <div key={i.label} className="bar-item">
+          <span className="bar-label">{i.label}</span>
+          <div className="bar-track">
+            <div className="bar-fill" style={{ width: `${(i.value / max) * 100}%`, background: color }} />
+          </div>
+          <span className="bar-count">{i.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function fmt(n: number | undefined, loading: boolean) {
+  if (loading) return null
+  return (n ?? 0).toLocaleString('fr-FR')
 }
 
 export default function ScolariteDashboard() {
@@ -22,135 +187,169 @@ export default function ScolariteDashboard() {
     apiFetch<Stats>('/stats/').then(setStats).catch(console.error).finally(() => setLoading(false))
   }, [])
 
-  const fmt = (n: number | undefined) => loading ? '—' : (n ?? 0).toLocaleString('fr-FR')
+  const me = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('dc_user') || 'null') } catch { return null }
+  }, [])
 
-  const kpis = [
-    {
-      label: 'Inscriptions',
-      value: fmt(stats?.inscriptions),
-      sub: stats?.annee_active ?? 'Aucune année active',
-      icon: ClipboardList,
-      color: '#1AAFE6',
-      bg: 'rgba(26,175,230,0.08)',
-      href: '/scolarite/inscriptions',
-      trend: '+12%',
-    },
-    {
-      label: 'Étudiants',
-      value: fmt(stats?.etudiants),
-      sub: 'Total enregistrés',
-      icon: Users,
-      color: '#8b5cf6',
-      bg: 'rgba(139,92,246,0.08)',
-      href: '/scolarite/inscriptions',
-      trend: null,
-    },
-    {
-      label: 'Classes',
-      value: fmt(stats?.classes),
-      sub: 'Groupes actifs',
-      icon: LayoutGrid,
-      color: '#10b981',
-      bg: 'rgba(16,185,129,0.08)',
-      href: '/scolarite/classes',
-      trend: null,
-    },
-    {
-      label: 'Unités d\'enseignement',
-      value: fmt(stats?.ues),
-      sub: 'UE configurées',
-      icon: BookOpen,
-      color: '#f59e0b',
-      bg: 'rgba(245,158,11,0.08)',
-      href: '/scolarite/ues',
-      trend: null,
-    },
-  ]
+  const s = stats
 
-  const shortcuts = [
-    { label: 'Nouvelle inscription', href: '/scolarite/inscriptions', icon: ClipboardList, desc: 'Inscrire un étudiant', accent: '#1AAFE6' },
-    { label: 'Gérer les classes',    href: '/scolarite/classes',      icon: LayoutGrid,    desc: 'Classes & niveaux',   accent: '#10b981' },
-    { label: 'Unités d\'enseign.',   href: '/scolarite/ues',          icon: BookOpen,      desc: 'UE & ECUE',          accent: '#f59e0b' },
-    { label: 'Étudiants',            href: '/scolarite/inscriptions', icon: Users,         desc: 'Liste des étudiants', accent: '#8b5cf6' },
-  ]
+  const paiTotal = (s?.paiements_ok ?? 0) + (s?.paiements_attente ?? 0)
+  const paiPct = paiTotal > 0 ? Math.round(((s?.paiements_ok ?? 0) / paiTotal) * 100) : 0
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <>
+      {STYLE}
+      <div className="db">
 
-      {/* Page header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Scolarité</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Gestion des inscriptions, classes et paramétrage académique
-            {stats?.annee_active && (
-              <span className="ml-2 font-semibold text-brand">{stats.annee_active}</span>
+        {/* Header */}
+        <div className="db-head">
+          <div>
+            <h1 className="db-title">Bonjour{me?.nom ? `, ${me.nom.split(' ')[0]}` : ''} 👋</h1>
+            <p className="db-sub">Tableau de bord scolarité · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          </div>
+          {s?.annee_active && (
+            <div className="db-badge">
+              <span className="db-badge-dot" />
+              Année active : {s.annee_active}
+            </div>
+          )}
+        </div>
+
+        {/* KPI cards */}
+        <div className="kpi-row">
+          {[
+            { label: 'Inscriptions', sub: s?.annee_active ?? 'Aucune année active', val: fmt(s?.inscriptions, loading), color: 'blue', icon: <ClipboardList size={18} color="#1AAFE6" />, iconBg: 'rgba(26,175,230,0.1)' },
+            { label: 'Étudiants', sub: `${fmt(s?.etudiants_inscrit, loading)} inscrits actifs`, val: fmt(s?.etudiants, loading), color: 'violet', icon: <Users size={18} color="#8b5cf6" />, iconBg: 'rgba(139,92,246,0.1)' },
+            { label: 'Classes', sub: `${(s?.niveaux ?? []).length} niveaux actifs`, val: fmt(s?.classes, loading), color: 'green', icon: <LayoutGrid size={18} color="#10b981" />, iconBg: 'rgba(16,185,129,0.1)' },
+            { label: 'Unités d\'enseignement', sub: 'UE configurées', val: fmt(s?.ues, loading), color: 'amber', icon: <BookOpen size={18} color="#f59e0b" />, iconBg: 'rgba(245,158,11,0.1)' },
+          ].map(k => (
+            <div key={k.label} className={`kpi ${k.color}`}>
+              <div className="kpi-icon" style={{ background: k.iconBg }}>{k.icon}</div>
+              {loading
+                ? <div className="kpi-skel" />
+                : <div className="kpi-val">{k.val}</div>
+              }
+              <div className="kpi-label">{k.label}</div>
+              <div className="kpi-sub">{k.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Middle row */}
+        <div className="mid-row">
+
+          {/* Statuts étudiants */}
+          <div className="card">
+            <div className="card-title">Statuts étudiants</div>
+            <DonutRing data={[
+              { label: 'Inscrits',  value: s?.etudiants_inscrit  ?? 0, color: '#10b981' },
+              { label: 'En cours', value: s?.etudiants_en_cours  ?? 0, color: '#f59e0b' },
+              { label: 'Admis',    value: s?.etudiants_admis     ?? 0, color: '#1AAFE6' },
+              { label: 'Refusés',  value: s?.etudiants_refuse    ?? 0, color: '#ef4444' },
+            ]} />
+          </div>
+
+          {/* Types d'inscriptions */}
+          <div className="card">
+            <div className="card-title">Types d&apos;inscriptions</div>
+            <BarChart color="#1AAFE6" items={[
+              { label: 'Nouveaux',     value: s?.inscriptions_nouveau   ?? 0 },
+              { label: 'Réinscrits',   value: s?.inscriptions_reinscrit ?? 0 },
+              { label: 'Transferts',   value: s?.inscriptions_transfert ?? 0 },
+            ]} />
+          </div>
+
+          {/* Paiements */}
+          <div className="card">
+            <div className="card-title">Paiements</div>
+            <div style={{ marginBottom: '.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.375rem' }}>
+                <span style={{ fontSize: '.775rem', color: '#475569' }}>Taux de paiement</span>
+                <span style={{ fontSize: '.775rem', fontWeight: 700, color: '#10b981' }}>{loading ? '—' : `${paiPct}%`}</span>
+              </div>
+              <div style={{ height: 8, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${paiPct}%`, background: '#10b981', borderRadius: 99, transition: 'width .6s ease' }} />
+              </div>
+            </div>
+            <div className="split">
+              <div className="split-item">
+                <div className="split-dot" style={{ background: '#10b981' }} />
+                <div className="split-val" style={{ color: '#10b981' }}>{loading ? '—' : s?.paiements_ok ?? 0}</div>
+                <div className="split-label">Payés</div>
+              </div>
+              <div className="split-item">
+                <div className="split-dot" style={{ background: '#f59e0b' }} />
+                <div className="split-val" style={{ color: '#f59e0b' }}>{loading ? '—' : s?.paiements_attente ?? 0}</div>
+                <div className="split-label">En attente</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom row */}
+        <div className="bot-row">
+
+          {/* Recent inscriptions */}
+          <div className="card">
+            <div className="card-title">Dernières inscriptions</div>
+            {loading && <p style={{ fontSize: '.8rem', color: '#94a3b8' }}>Chargement…</p>}
+            {!loading && (s?.recent_inscriptions ?? []).length === 0 && (
+              <p style={{ fontSize: '.8rem', color: '#94a3b8', padding: '1rem 0', textAlign: 'center' }}>Aucune inscription pour l&apos;année active</p>
             )}
-          </p>
-        </div>
-        {stats?.annee_active && (
-          <Badge variant="default" className="shrink-0 mt-1">
-            Année active : {stats.annee_active}
-          </Badge>
-        )}
-      </div>
-
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((k) => {
-          const Icon = k.icon
-          return (
-            <Link key={k.label} href={k.href} className="block group">
-              <Card className="hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: k.bg }}>
-                      <Icon size={18} style={{ color: k.color }} />
-                    </div>
-                    {k.trend && (
-                      <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5">
-                        <TrendingUp size={11} /> {k.trend}
-                      </span>
-                    )}
+            {(s?.recent_inscriptions ?? []).map(r => {
+              const typeC: Record<string, { bg: string; color: string }> = {
+                nouveau:   { bg: 'rgba(26,175,230,0.1)',  color: '#1AAFE6' },
+                reinscrit: { bg: 'rgba(16,185,129,0.1)',  color: '#10b981' },
+                transfert: { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
+              }
+              const tc = typeC[r.type] ?? { bg: '#f1f5f9', color: '#64748b' }
+              return (
+                <div key={r.id} className="rec-row">
+                  <div className="rec-av" style={{ background: av(r.etudiant_nom) }}>
+                    {r.etudiant_nom.slice(0, 2).toUpperCase()}
                   </div>
-                  <div className="text-2xl font-bold text-slate-900 tabular-nums">{k.value}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{k.label}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{k.sub}</div>
-                </CardContent>
-              </Card>
-            </Link>
-          )
-        })}
-      </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="rec-name">{r.etudiant_nom}</div>
+                    <div className="rec-sub">{r.classe} · <span style={{ fontFamily: 'monospace', fontSize: '.7rem' }}>{r.etudiant_code}</span></div>
+                  </div>
+                  <span className="rec-badge" style={{ background: tc.bg, color: tc.color }}>
+                    {r.type === 'nouveau' ? 'Nouveau' : r.type === 'reinscrit' ? 'Réinscrit' : 'Transfert'}
+                  </span>
+                  <div className="rec-pay">
+                    {r.paiement
+                      ? <CheckCircle2 size={14} color="#10b981" />
+                      : <Clock size={14} color="#f59e0b" />
+                    }
+                  </div>
+                </div>
+              )
+            })}
+          </div>
 
-      {/* Quick actions */}
-      <div>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Actions rapides</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {shortcuts.map((s) => {
-            const Icon = s.icon
-            return (
-              <Link key={s.label} href={s.href} className="block group">
-                <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group-hover:border-slate-300">
-                  <CardContent className="p-4">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-                      style={{ background: `${s.accent}14` }}
-                    >
-                      <Icon size={19} style={{ color: s.accent }} />
-                    </div>
-                    <div className="font-semibold text-slate-800 text-sm leading-tight">{s.label}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{s.desc}</div>
-                    <div className="flex items-center gap-1 mt-2 text-xs font-medium" style={{ color: s.accent }}>
-                      Accéder <ArrowRight size={11} />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
+          {/* Classes par niveau */}
+          <div className="card">
+            <div className="card-title">Classes par niveau</div>
+            {loading && <p style={{ fontSize: '.8rem', color: '#94a3b8' }}>Chargement…</p>}
+            {!loading && (s?.niveaux ?? []).length === 0 && (
+              <p style={{ fontSize: '.8rem', color: '#94a3b8', padding: '1rem 0', textAlign: 'center' }}>Aucune classe</p>
+            )}
+            {(s?.niveaux ?? []).map(n => {
+              const max = Math.max(...(s?.niveaux ?? []).map(x => x.count), 1)
+              const nc = NIVEAU_C[n.niveau] ?? { bg: '#f1f5f9', color: '#64748b' }
+              return (
+                <div key={n.niveau} className="niv-bar">
+                  <span className="niv-code" style={{ background: nc.bg, color: nc.color }}>{n.niveau}</span>
+                  <div className="niv-track">
+                    <div className="niv-fill" style={{ width: `${(n.count / max) * 100}%`, background: nc.color }} />
+                  </div>
+                  <span className="niv-n">{n.count}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
+
       </div>
-    </div>
+    </>
   )
 }

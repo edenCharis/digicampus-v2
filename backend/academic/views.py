@@ -36,16 +36,19 @@ class DashboardStatsView(APIView):
         else:
             etab_ids = list(Etablissement.objects.values_list('id', flat=True))
 
-        etudiants = Etudiant.objects.filter(etablissement_id__in=etab_ids).count()
-        classes = Classe.objects.filter(etablissement_id__in=etab_ids).count()
-        ues = UE.objects.filter(etablissement_id__in=etab_ids).count()
+        from django.db.models import Count, Q
+
+        etudiants_qs = Etudiant.objects.filter(etablissement_id__in=etab_ids)
+        classes_qs   = Classe.objects.filter(etablissement_id__in=etab_ids)
+        ues          = UE.objects.filter(etablissement_id__in=etab_ids).count()
 
         annee_active = AnneeAcademique.objects.filter(
             etablissement_id__in=etab_ids, is_active=True
         ).first()
-        inscriptions = (
-            Inscription.objects.filter(annee=annee_active).count()
-            if annee_active else 0
+
+        insc_qs = (
+            Inscription.objects.filter(annee=annee_active)
+            if annee_active else Inscription.objects.none()
         )
 
         univs = University.objects.filter(
@@ -58,15 +61,62 @@ class DashboardStatsView(APIView):
             university=user.university
         ).count() if user.university_id else User.objects.count()
 
+        # Breakdown inscriptions by type
+        type_counts = {
+            row['type_inscription']: row['cnt']
+            for row in insc_qs.values('type_inscription').annotate(cnt=Count('id'))
+        }
+
+        # Paiements
+        payees     = insc_qs.filter(statut_paiement=True).count()
+        non_payees = insc_qs.filter(statut_paiement=False).count()
+
+        # Students by statut
+        statut_counts = {
+            row['statut']: row['cnt']
+            for row in etudiants_qs.values('statut').annotate(cnt=Count('id'))
+        }
+
+        # Classes by niveau
+        niveaux_counts = [
+            {'niveau': row['niveau'], 'count': row['cnt']}
+            for row in classes_qs.values('niveau').annotate(cnt=Count('id')).order_by('niveau')
+        ]
+
+        # Recent inscriptions (last 8)
+        recent = []
+        for insc in insc_qs.select_related('etudiant', 'classe').order_by('-date_inscription')[:8]:
+            recent.append({
+                'id': insc.id,
+                'etudiant_nom': f"{insc.etudiant.nom} {insc.etudiant.prenom}",
+                'etudiant_code': insc.etudiant.code,
+                'classe': insc.classe.libelle,
+                'type': insc.type_inscription,
+                'paiement': insc.statut_paiement,
+                'date': str(insc.date_inscription),
+            })
+
         return Response({
             'universites': univs,
             'etablissements': etabs,
             'utilisateurs': users_count,
-            'etudiants': etudiants,
-            'classes': classes,
+            'etudiants': etudiants_qs.count(),
+            'classes': classes_qs.count(),
             'ues': ues,
-            'inscriptions': inscriptions,
+            'inscriptions': insc_qs.count(),
             'annee_active': annee_active.libelle if annee_active else None,
+            # Enriched
+            'inscriptions_nouveau':    type_counts.get('nouveau', 0),
+            'inscriptions_reinscrit':  type_counts.get('reinscrit', 0),
+            'inscriptions_transfert':  type_counts.get('transfert', 0),
+            'paiements_ok':            payees,
+            'paiements_attente':       non_payees,
+            'etudiants_inscrit':       statut_counts.get('inscrit', 0),
+            'etudiants_en_cours':      statut_counts.get('en cours', 0),
+            'etudiants_admis':         statut_counts.get('admis', 0),
+            'etudiants_refuse':        statut_counts.get('refusé', 0),
+            'niveaux': niveaux_counts,
+            'recent_inscriptions': recent,
         })
 
 

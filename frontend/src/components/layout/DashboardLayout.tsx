@@ -104,6 +104,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
         body { overflow-x: hidden; }
+        * { scrollbar-width: none; }
+        *::-webkit-scrollbar { display: none; }
 
         /* ── Topbar ── */
         .dc-topbar {

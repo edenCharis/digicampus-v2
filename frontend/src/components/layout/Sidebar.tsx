@@ -48,6 +48,15 @@ const ALL_NAV_ITEMS: SidebarItem[] = [
   { label: 'Classes',          href: '/scolarite/classes',      icon: <LayoutGrid size={17} /> },
   { label: 'UEs & ECUEs',      href: '/scolarite/ues',          icon: <BookOpen size={17} /> },
   { label: 'Enseignants',      href: '/scolarite/enseignants',  icon: <UserCheck size={17} /> },
+  {
+    label: 'Référentiel',
+    icon: <BookMarked size={17} />,
+    children: [
+      { label: 'Cycles',      href: '/scolarite/cycles',      icon: <RotateCcw size={15} /> },
+      { label: 'Parcours',    href: '/scolarite/parcours',    icon: <GitFork size={15} /> },
+      { label: 'Spécialités', href: '/scolarite/specialites', icon: <BookOpen size={15} /> },
+    ],
+  },
   // Other roles
   { label: 'Doyen',            href: '/doyen',        icon: <Briefcase size={17} /> },
   { label: 'Enseignants',      href: '/enseignant',   icon: <Users size={17} /> },

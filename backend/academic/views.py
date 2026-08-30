@@ -182,7 +182,7 @@ class AnneeDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class CycleListView(generics.ListCreateAPIView):
     serializer_class = CycleSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         qs = scoped_qs(self.request, Cycle.objects.all())
@@ -194,7 +194,7 @@ class CycleListView(generics.ListCreateAPIView):
 
 class CycleDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CycleSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdminOrScolarite]
 
     def get_queryset(self):
         return scoped_qs(self.request, Cycle.objects.all())
@@ -265,7 +265,7 @@ class PaiementScolariteDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ParcoursListView(generics.ListCreateAPIView):
     serializer_class = ParcoursSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         qs = scoped_qs(self.request, Parcours.objects.select_related('etablissement'))
@@ -277,7 +277,7 @@ class ParcoursListView(generics.ListCreateAPIView):
 
 class ParcoursDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ParcoursSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdminOrScolarite]
 
     def get_queryset(self):
         return scoped_qs(self.request, Parcours.objects.select_related('etablissement'))
@@ -285,7 +285,7 @@ class ParcoursDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class SpecialiteListView(generics.ListCreateAPIView):
     serializer_class = SpecialiteSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         qs = scoped_qs(self.request, Specialite.objects.select_related('cycle', 'parcours'))
@@ -300,7 +300,7 @@ class SpecialiteListView(generics.ListCreateAPIView):
 
 class SpecialiteDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SpecialiteSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdminOrScolarite]
 
     def get_queryset(self):
         return scoped_qs(self.request, Specialite.objects.select_related('cycle', 'parcours'))

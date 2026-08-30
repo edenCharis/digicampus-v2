@@ -2,6 +2,10 @@ import type { Role } from '@/types'
 
 export const ROUTE_ROLES: Record<string, Role[]> = {
   '/administrateur': ['administrateur'],
+  '/administrateur/annees': ['administrateur'],
+  '/administrateur/cycles': ['administrateur'],
+  '/administrateur/semestres': ['administrateur'],
+  '/administrateur/niveaux': ['administrateur'],
   '/scolarite':  ['scolarité'],
   '/doyen':      ['doyen'],
   '/enseignant': ['enseignant'],
@@ -55,6 +59,10 @@ export const ROLE_NAV: Record<Role, string[]> = {
     '/administrateur/abonnements',
     '/administrateur/logs',
     '/administrateur/parametrage',
+    '/administrateur/annees',
+    '/administrateur/cycles',
+    '/administrateur/semestres',
+    '/administrateur/niveaux',
   ],
   'scolarité': ['/scolarite', '/inscription'],
   doyen: ['/doyen', '/gesnote', '/suivi', '/pvd'],

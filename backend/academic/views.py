@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from accounts.permissions import AcademicReadPermission, EtudiantPermission, IsAdminOrScolarite, IsAdmin
 from .models import (
     AnneeAcademique, Cycle, Parcours, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
+    Semestre, Niveau,
 )
 from .serializers import (
     AnneeAcademiqueSerializer, CycleSerializer, ParcoursSerializer, SpecialiteSerializer,
     ClasseSerializer, UESerializer, ECUESerializer, EtudiantSerializer, EtudiantListSerializer,
-    InscriptionSerializer, InscriptionCreateSerializer,
+    InscriptionSerializer, InscriptionCreateSerializer, SemestreSerializer, NiveauSerializer,
 )
 from accounts.models import User, University, Etablissement
 
@@ -103,7 +104,11 @@ class CycleListView(generics.ListCreateAPIView):
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        return scoped_qs(self.request, Cycle.objects.all())
+        qs = scoped_qs(self.request, Cycle.objects.all())
+        etab = self.request.query_params.get('etablissement')
+        if etab:
+            qs = qs.filter(etablissement_id=etab)
+        return qs
 
 
 class CycleDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -112,6 +117,46 @@ class CycleDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return scoped_qs(self.request, Cycle.objects.all())
+
+
+class SemestreListView(generics.ListCreateAPIView):
+    serializer_class = SemestreSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = scoped_qs(self.request, Semestre.objects.all())
+        etab = self.request.query_params.get('etablissement')
+        if etab:
+            qs = qs.filter(etablissement_id=etab)
+        return qs
+
+
+class SemestreDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SemestreSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, Semestre.objects.all())
+
+
+class NiveauListView(generics.ListCreateAPIView):
+    serializer_class = NiveauSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = scoped_qs(self.request, Niveau.objects.all())
+        etab = self.request.query_params.get('etablissement')
+        if etab:
+            qs = qs.filter(etablissement_id=etab)
+        return qs
+
+
+class NiveauDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = NiveauSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, Niveau.objects.all())
 
 
 class ParcoursListView(generics.ListCreateAPIView):

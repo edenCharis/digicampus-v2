@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     AnneeAcademique, Cycle, Parcours, Specialite, Classe, UE, ECUE,
-    Etudiant, Inscription,
+    Etudiant, Inscription, Semestre, Niveau,
 )
 
 
@@ -32,6 +32,18 @@ class SpecialiteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specialite
         fields = ['id', 'code', 'libelle', 'etablissement', 'cycle', 'cycle_libelle', 'parcours', 'parcours_libelle']
+
+
+class SemestreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Semestre
+        fields = ['id', 'code', 'libelle', 'ordre', 'etablissement']
+
+
+class NiveauSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Niveau
+        fields = ['id', 'code', 'libelle', 'ordre', 'etablissement']
 
 
 class ClasseSerializer(serializers.ModelSerializer):

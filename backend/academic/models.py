@@ -104,6 +104,34 @@ class ECUE(models.Model):
         return f"{self.code} — {self.libelle}"
 
 
+class Semestre(models.Model):
+    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='semestres')
+    code = models.CharField(max_length=20)
+    libelle = models.CharField(max_length=100)
+    ordre = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('etablissement', 'code')
+        ordering = ['ordre', 'code']
+
+    def __str__(self):
+        return self.libelle
+
+
+class Niveau(models.Model):
+    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='niveaux')
+    code = models.CharField(max_length=20)
+    libelle = models.CharField(max_length=100)
+    ordre = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('etablissement', 'code')
+        ordering = ['ordre', 'code']
+
+    def __str__(self):
+        return self.libelle
+
+
 class TypeDiplome(models.Model):
     etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='types_diplome')
     libelle = models.CharField(max_length=100)

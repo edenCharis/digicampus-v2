@@ -5,7 +5,7 @@ import {
   GraduationCap, Users, BookOpen, ClipboardList,
   UserCheck, Award, FileText, BarChart2, CreditCard, BookMarked,
   ShieldCheck, Briefcase, LogOut, X, ChevronRight,
-  Building2, Activity, Settings, Globe,
+  Building2, Activity, Settings, Globe, CalendarDays, RotateCcw, Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROLE_NAV } from '@/lib/permissions'
@@ -22,6 +22,10 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { label: 'Abonnements',       href: '/administrateur/abonnements',       icon: <Globe size={17} /> },
   { label: 'Logs',              href: '/administrateur/logs',              icon: <Activity size={17} /> },
   { label: 'Paramétrage',       href: '/administrateur/parametrage',       icon: <Settings size={17} /> },
+  { label: 'Années',            href: '/administrateur/annees',            icon: <CalendarDays size={17} /> },
+  { label: 'Cycles',            href: '/administrateur/cycles',            icon: <RotateCcw size={17} /> },
+  { label: 'Semestres',         href: '/administrateur/semestres',         icon: <BookOpen size={17} /> },
+  { label: 'Niveaux',           href: '/administrateur/niveaux',           icon: <Layers size={17} /> },
   // Other roles
   { label: 'Scolarité',         href: '/scolarite',      icon: <GraduationCap size={17} /> },
   { label: 'Doyen',             href: '/doyen',          icon: <Briefcase size={17} /> },

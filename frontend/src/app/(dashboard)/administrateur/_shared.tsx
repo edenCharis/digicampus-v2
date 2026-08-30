@@ -11,6 +11,8 @@ export interface Annee         { id: number; libelle: string; is_active: boolean
 export interface Cycle         { id: number; code: string; libelle: string; etablissement: number }
 export interface Parcours      { id: number; code: string; libelle: string; etablissement: number; etablissement_libelle: string }
 export interface Specialite    { id: number; code: string; libelle: string; cycle: number | null; cycle_libelle: string | null; parcours: number | null; parcours_libelle: string | null; etablissement: number }
+export interface Semestre      { id: number; code: string; libelle: string; ordre: number; etablissement: number }
+export interface Niveau        { id: number; code: string; libelle: string; ordre: number; etablissement: number }
 export interface Abonnement    { id: number; university: number; university_name: string; university_code: string; statut: string; date_debut: string | null; date_fin: string | null; max_users: number; modules: string[]; notes: string; user_count: number; updated_at: string }
 export interface LogEntry      { id: number; user_login: string; user_nom: string; action: string; action_label: string; description: string; ip: string | null; university_name: string | null; created_at: string }
 export interface AdminStats    { universities: number; etablissements: number; users_total: number; abonnements: number; abonnes_actifs: number; connexions_today: number; connexions_yesterday: number; connexions_week: { date: string; count: number }[]; users_by_role: { role: string; count: number }[]; recent_logs: LogEntry[] }

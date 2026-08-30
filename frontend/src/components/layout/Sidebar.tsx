@@ -45,16 +45,17 @@ const ALL_NAV_ITEMS: SidebarItem[] = [
   { label: 'Tableau de bord',  href: '/scolarite',         icon: <BarChart2 size={17} />,    exact: true },
   { label: 'Inscriptions',     href: '/scolarite/inscriptions', icon: <ClipboardList size={17} /> },
   { label: 'Étudiants',        href: '/scolarite/etudiants',    icon: <Users size={17} /> },
-  { label: 'Classes',          href: '/scolarite/classes',      icon: <LayoutGrid size={17} /> },
-  { label: 'UEs & ECUEs',      href: '/scolarite/ues',          icon: <BookOpen size={17} /> },
   { label: 'Enseignants',      href: '/scolarite/enseignants',  icon: <UserCheck size={17} /> },
   {
-    label: 'Référentiel',
-    icon: <BookMarked size={17} />,
+    label: 'Paramétrage',
+    icon: <Settings size={17} />,
     children: [
       { label: 'Cycles',      href: '/scolarite/cycles',      icon: <RotateCcw size={15} /> },
       { label: 'Parcours',    href: '/scolarite/parcours',    icon: <GitFork size={15} /> },
-      { label: 'Spécialités', href: '/scolarite/specialites', icon: <BookOpen size={15} /> },
+      { label: 'Spécialités', href: '/scolarite/specialites', icon: <BookMarked size={15} /> },
+      { label: 'UEs',         href: '/scolarite/ues',         icon: <BookOpen size={15} /> },
+      { label: 'ECUEs',       href: '/scolarite/ecues',       icon: <Layers size={15} /> },
+      { label: 'Classes',     href: '/scolarite/classes',     icon: <LayoutGrid size={15} /> },
     ],
   },
   // Other roles

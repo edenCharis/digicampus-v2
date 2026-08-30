@@ -1,12 +1,12 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Plus, Pencil, Trash2, BookOpen, Search, X, PlusCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, BookOpen, Search, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 const PAGE_SIZE = 20
 
 interface Specialite { id: number; libelle: string; code: string }
-interface ECUE { id?: number; code: string; libelle: string; credits: number; coefficient: number; ue?: number }
+interface ECUE { id?: number; code: string; libelle: string }
 interface UE {
   id: number; code: string; libelle: string; semestre: string; niveau: string
   credits: number; specialite: number; specialite_libelle: string; etablissement: number; ecues: ECUE[]
@@ -26,8 +26,6 @@ const SEM_COLORS: Record<string, string> = {
   S1:'#1AAFE6',S2:'#0ea5e9',S3:'#8b5cf6',S4:'#7c3aed',S5:'#22c55e',
   S6:'#10b981',S7:'#f59e0b',S8:'#ef4444',S9:'#f97316',S10:'#a855f7',
 }
-
-function emptyEcue(): ECUE { return { code: '', libelle: '', credits: 0, coefficient: 1 } }
 
 const STYLE = (
   <style>{`
@@ -90,15 +88,6 @@ const STYLE = (
     .btn-save:disabled { opacity:.6; cursor:not-allowed; }
     .err { background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:.65rem .875rem; font-size:.8rem; color:#dc2626; }
 
-    /* ECUEs inline table */
-    .ecue-table { width:100%; border-collapse:collapse; margin-top:.25rem; }
-    .ecue-table th { font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; padding:.4rem .5rem; text-align:left; background:#f8fafc; border-bottom:1px solid #e2e8f0; }
-    .ecue-table td { padding:.3rem .5rem; vertical-align:middle; }
-    .ecue-table input { border:1px solid #e2e8f0; border-radius:6px; padding:.3rem .5rem; font-size:.8rem; width:100%; outline:none; background:#fff; }
-    .ecue-table input:focus { border-color:#1AAFE6; }
-    .ecue-add-btn { display:inline-flex; align-items:center; gap:.3rem; font-size:.75rem; color:#1AAFE6; background:none; border:none; cursor:pointer; padding:.25rem 0; font-weight:600; }
-    .ecue-del { background:none; border:none; cursor:pointer; color:#cbd5e1; padding:2px 4px; border-radius:5px; }
-    .ecue-del:hover { color:#ef4444; background:rgba(239,68,68,0.08); }
     .ecue-chip { display:inline-flex; align-items:center; padding:.15rem .45rem; border-radius:6px; font-size:.7rem; font-weight:700; background:rgba(26,175,230,0.1); color:#1AAFE6; margin:.1rem; }
   `}</style>
 )
@@ -115,7 +104,6 @@ export default function UEsPage() {
   const [open, setOpen]           = useState(false)
   const [editTarget, setEditTarget] = useState<UE | null>(null)
   const [form, setForm]           = useState({ code: '', libelle: '', niveau: 'L1', semestre: 'S1', credits: '', specialite: '' })
-  const [ecues, setEcues]         = useState<ECUE[]>([emptyEcue()])
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState<string | null>(null)
   const [delTarget, setDelTarget] = useState<UE | null>(null)
@@ -153,20 +141,12 @@ export default function UEsPage() {
   function openAdd() {
     setEditTarget(null)
     setForm({ code: '', libelle: '', niveau: 'L1', semestre: 'S1', credits: '', specialite: specialites[0]?.id.toString() ?? '' })
-    setEcues([emptyEcue()]); setError(null); setOpen(true)
+    setError(null); setOpen(true)
   }
   function openEdit(ue: UE) {
     setEditTarget(ue)
     setForm({ code: ue.code, libelle: ue.libelle, niveau: ue.niveau, semestre: ue.semestre, credits: ue.credits.toString(), specialite: ue.specialite.toString() })
-    setEcues(ue.ecues.length > 0 ? ue.ecues.map(e => ({ ...e })) : [emptyEcue()])
     setError(null); setOpen(true)
-  }
-
-  function updateEcue(idx: number, field: keyof ECUE, val: string) {
-    setEcues(prev => prev.map((e, i) => i === idx
-      ? { ...e, [field]: field === 'credits' || field === 'coefficient' ? Number(val) : val }
-      : e
-    ))
   }
 
   async function handleSave(ev: React.FormEvent) {
@@ -178,19 +158,10 @@ export default function UEsPage() {
         semestre: form.semestre, credits: Number(form.credits) || 0,
         specialite: Number(form.specialite), etablissement: user.etablissement,
       }
-      let ueId: number
       if (editTarget) {
-        const updated = await apiFetch<UE>(`/ues/${editTarget.id}/`, { method: 'PATCH', body: JSON.stringify(ueBody) })
-        ueId = updated.id
+        await apiFetch<UE>(`/ues/${editTarget.id}/`, { method: 'PATCH', body: JSON.stringify(ueBody) })
       } else {
-        const created = await apiFetch<UE>('/ues/', { method: 'POST', body: JSON.stringify(ueBody) })
-        ueId = created.id
-      }
-      const validEcues = ecues.filter(ec => ec.code.trim() && ec.libelle.trim())
-      for (const ec of validEcues) {
-        const ecueBody = { code: ec.code, libelle: ec.libelle, credits: ec.credits, coefficient: ec.coefficient, ue: ueId }
-        if (ec.id) await apiFetch(`/ecues/${ec.id}/`, { method: 'PATCH', body: JSON.stringify(ecueBody) })
-        else await apiFetch('/ecues/', { method: 'POST', body: JSON.stringify(ecueBody) })
+        await apiFetch<UE>('/ues/', { method: 'POST', body: JSON.stringify(ueBody) })
       }
       setOpen(false); load()
     } catch (err: unknown) {
@@ -378,40 +349,6 @@ export default function UEsPage() {
                   </div>
                 </div>
 
-                <div className="mo-section">Éléments constitutifs (ECUEs)</div>
-                <table className="ecue-table">
-                  <thead>
-                    <tr>
-                      <th>Code</th>
-                      <th style={{ width: '45%' }}>Libellé</th>
-                      <th>Crédits</th>
-                      <th>Coef.</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ecues.map((ec, idx) => (
-                      <tr key={idx}>
-                        <td><input value={ec.code} onChange={e => updateEcue(idx, 'code', e.target.value)} placeholder="ECUE-01" /></td>
-                        <td><input value={ec.libelle} onChange={e => updateEcue(idx, 'libelle', e.target.value)} placeholder="Intitulé de l'ECUE" /></td>
-                        <td><input type="number" min="0" step="0.5" value={ec.credits} onChange={e => updateEcue(idx, 'credits', e.target.value)} /></td>
-                        <td><input type="number" min="0" step="0.5" value={ec.coefficient} onChange={e => updateEcue(idx, 'coefficient', e.target.value)} /></td>
-                        <td>
-                          {ecues.length > 1 && (
-                            <button type="button" className="ecue-del"
-                              onClick={() => setEcues(prev => prev.filter((_, i) => i !== idx))}>
-                              <X size={12} />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <button type="button" className="ecue-add-btn"
-                  onClick={() => setEcues(prev => [...prev, emptyEcue()])}>
-                  <PlusCircle size={13} /> Ajouter un ECUE
-                </button>
               </div>
               <div className="mo-foot">
                 <button type="button" className="btn-cancel" onClick={() => setOpen(false)}>Annuler</button>

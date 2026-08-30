@@ -85,9 +85,12 @@ class ClasseSerializer(serializers.ModelSerializer):
 
 
 class ECUESerializer(serializers.ModelSerializer):
+    ue_code    = serializers.CharField(source='ue.code',    read_only=True)
+    ue_libelle = serializers.CharField(source='ue.libelle', read_only=True)
+
     class Meta:
         model = ECUE
-        fields = ['id', 'code', 'libelle', 'credits', 'coefficient', 'ue']
+        fields = ['id', 'code', 'libelle', 'credits', 'coefficient', 'ue', 'ue_code', 'ue_libelle']
 
 
 class UESerializer(serializers.ModelSerializer):

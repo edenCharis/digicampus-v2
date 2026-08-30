@@ -381,9 +381,17 @@ class EtudiantDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ECUEListView(generics.ListCreateAPIView):
     serializer_class = ECUESerializer
+    permission_classes = [AcademicReadPermission]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['code', 'libelle']
 
     def get_queryset(self):
+        user = self.request.user
         qs = ECUE.objects.select_related('ue')
+        if user.etablissement_id:
+            qs = qs.filter(ue__etablissement=user.etablissement)
+        elif user.university_id:
+            qs = qs.filter(ue__etablissement__university=user.university)
         ue_id = self.request.query_params.get('ue')
         if ue_id:
             qs = qs.filter(ue_id=ue_id)
@@ -392,7 +400,16 @@ class ECUEListView(generics.ListCreateAPIView):
 
 class ECUEDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ECUESerializer
-    queryset = ECUE.objects.all()
+    permission_classes = [IsAdminOrScolarite]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = ECUE.objects.select_related('ue')
+        if user.etablissement_id:
+            qs = qs.filter(ue__etablissement=user.etablissement)
+        elif user.university_id:
+            qs = qs.filter(ue__etablissement__university=user.university)
+        return qs
 
 
 class ClasseDetailView(generics.RetrieveUpdateDestroyAPIView):

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
-import { Users, ClipboardList, BookOpen, LayoutGrid, AlertCircle } from 'lucide-react'
+import { Users, ClipboardList, BookOpen, LayoutGrid, AlertCircle, UserCheck } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 interface SuiviPeriode {
@@ -8,7 +8,7 @@ interface SuiviPeriode {
   paye: number; partiel: number; attente: number; total: number
 }
 interface Stats {
-  etudiants: number; classes: number; ues: number; inscriptions: number
+  etudiants: number; classes: number; ues: number; inscriptions: number; enseignants: number
   annee_active: string | null
   inscriptions_nouveau: number; inscriptions_reinscrit: number; inscriptions_transfert: number
   suivi_mois: SuiviPeriode; suivi_semestre: SuiviPeriode
@@ -201,8 +201,8 @@ export default function ScolariteDashboard() {
           {[
             { label: 'Inscriptions', sub: s?.annee_active ?? 'Aucune année active', val: fmt(s?.inscriptions, loading), color: 'blue', icon: <ClipboardList size={18} color="#1AAFE6" />, iconBg: 'rgba(26,175,230,0.1)' },
             { label: 'Étudiants', sub: `${fmt(s?.etudiants_inscrit, loading)} inscrits actifs`, val: fmt(s?.etudiants, loading), color: 'violet', icon: <Users size={18} color="#8b5cf6" />, iconBg: 'rgba(139,92,246,0.1)' },
-            { label: 'Classes', sub: `${(s?.niveaux ?? []).length} niveaux actifs`, val: fmt(s?.classes, loading), color: 'green', icon: <LayoutGrid size={18} color="#10b981" />, iconBg: 'rgba(16,185,129,0.1)' },
-            { label: 'Unités d\'enseignement', sub: 'UE configurées', val: fmt(s?.ues, loading), color: 'amber', icon: <BookOpen size={18} color="#f59e0b" />, iconBg: 'rgba(245,158,11,0.1)' },
+            { label: 'Classes', sub: 'Groupes pédagogiques', val: fmt(s?.classes, loading), color: 'green', icon: <LayoutGrid size={18} color="#10b981" />, iconBg: 'rgba(16,185,129,0.1)' },
+            { label: 'Enseignants', sub: 'Actifs cet établissement', val: fmt(s?.enseignants, loading), color: 'amber', icon: <UserCheck size={18} color="#f59e0b" />, iconBg: 'rgba(245,158,11,0.1)' },
           ].map(k => (
             <div key={k.label} className={`kpi ${k.color}`}>
               <div className="kpi-icon" style={{ background: k.iconBg }}>{k.icon}</div>

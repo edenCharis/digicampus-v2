@@ -47,6 +47,7 @@ const ALL_NAV_ITEMS: SidebarItem[] = [
   { label: 'Étudiants',        href: '/scolarite/etudiants',    icon: <Users size={17} /> },
   { label: 'Classes',          href: '/scolarite/classes',      icon: <LayoutGrid size={17} /> },
   { label: 'UEs & ECUEs',      href: '/scolarite/ues',          icon: <BookOpen size={17} /> },
+  { label: 'Enseignants',      href: '/scolarite/enseignants',  icon: <UserCheck size={17} /> },
   // Other roles
   { label: 'Doyen',            href: '/doyen',        icon: <Briefcase size={17} /> },
   { label: 'Enseignants',      href: '/enseignant',   icon: <Users size={17} /> },

@@ -4,13 +4,13 @@ from rest_framework.response import Response
 from accounts.permissions import AcademicReadPermission, EtudiantPermission, IsAdminOrScolarite, IsAdmin
 from .models import (
     AnneeAcademique, Cycle, Parcours, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
-    Semestre, Niveau, PaiementScolarite,
+    Semestre, Niveau, PaiementScolarite, Enseignant,
 )
 from .serializers import (
     AnneeAcademiqueSerializer, CycleSerializer, ParcoursSerializer, SpecialiteSerializer,
     ClasseSerializer, UESerializer, ECUESerializer, EtudiantSerializer, EtudiantListSerializer,
     InscriptionSerializer, InscriptionCreateSerializer, SemestreSerializer, NiveauSerializer,
-    PaiementScolariteSerializer,
+    PaiementScolariteSerializer, EnseignantSerializer,
 )
 from accounts.models import User, University, Etablissement
 
@@ -39,9 +39,10 @@ class DashboardStatsView(APIView):
 
         from django.db.models import Count, Q
 
-        etudiants_qs = Etudiant.objects.filter(etablissement_id__in=etab_ids)
-        classes_qs   = Classe.objects.filter(etablissement_id__in=etab_ids)
-        ues          = UE.objects.filter(etablissement_id__in=etab_ids).count()
+        etudiants_qs    = Etudiant.objects.filter(etablissement_id__in=etab_ids)
+        classes_qs      = Classe.objects.filter(etablissement_id__in=etab_ids)
+        ues             = UE.objects.filter(etablissement_id__in=etab_ids).count()
+        enseignants_cnt = Enseignant.objects.filter(etablissement_id__in=etab_ids, etat=True).count()
 
         annee_active = AnneeAcademique.objects.filter(
             etablissement_id__in=etab_ids, is_active=True
@@ -132,6 +133,7 @@ class DashboardStatsView(APIView):
             'etudiants': etudiants_qs.count(),
             'classes': classes_qs.count(),
             'ues': ues,
+            'enseignants': enseignants_cnt,
             'inscriptions': insc_qs.count(),
             'annee_active': annee_active.libelle if annee_active else None,
             # Enriched
@@ -479,3 +481,31 @@ class ReinscriptionView(APIView):
             'etudiant': EtudiantSerializer(etudiant).data,
             'inscription': InscriptionSerializer(inscription).data,
         }, status=status.HTTP_201_CREATED)
+
+
+class EnseignantListView(generics.ListCreateAPIView):
+    serializer_class = EnseignantSerializer
+    permission_classes = [IsAdminOrScolarite]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['nom', 'prenom', 'email']
+
+    def get_queryset(self):
+        qs = scoped_qs(self.request, Enseignant.objects.select_related('specialite'))
+        grade = self.request.query_params.get('grade')
+        if grade:
+            qs = qs.filter(grade=grade)
+        etat = self.request.query_params.get('etat')
+        if etat is not None:
+            qs = qs.filter(etat=etat == 'true')
+        specialite = self.request.query_params.get('specialite')
+        if specialite:
+            qs = qs.filter(specialite_id=specialite)
+        return qs
+
+
+class EnseignantDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EnseignantSerializer
+    permission_classes = [IsAdminOrScolarite]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, Enseignant.objects.select_related('specialite'))

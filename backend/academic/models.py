@@ -273,3 +273,38 @@ class PaiementScolarite(models.Model):
 
     def __str__(self):
         return f"{self.etudiant.code} — {self.periode} ({self.statut})"
+
+
+class Enseignant(models.Model):
+    class Grade(models.TextChoices):
+        PROFESSEUR   = 'professeur',   'Professeur Titulaire'
+        MCF          = 'mcf',          'Maître de Conférences'
+        ASSISTANT    = 'assistant',    'Assistant'
+        VACATAIRE    = 'vacataire',    'Vacataire'
+        CHARGE_COURS = 'charge_cours', 'Chargé de Cours'
+        AUTRE        = 'autre',        'Autre'
+
+    class Sexe(models.TextChoices):
+        M = 'M', 'Masculin'
+        F = 'F', 'Féminin'
+
+    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='enseignants')
+    nom           = models.CharField(max_length=100)
+    prenom        = models.CharField(max_length=100)
+    sexe          = models.CharField(max_length=1, choices=Sexe.choices, default=Sexe.M)
+    email         = models.EmailField(blank=True)
+    tel           = models.CharField(max_length=30, blank=True)
+    grade         = models.CharField(max_length=20, choices=Grade.choices, default=Grade.ASSISTANT)
+    specialite    = models.ForeignKey(Specialite, on_delete=models.SET_NULL, null=True, blank=True, related_name='enseignants')
+    etat          = models.BooleanField(default=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['nom', 'prenom']
+
+    def __str__(self):
+        return f"{self.nom} {self.prenom}"
+
+    @property
+    def nom_complet(self):
+        return f"{self.nom} {self.prenom}"

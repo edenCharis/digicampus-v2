@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     AnneeAcademique, Cycle, Parcours, Specialite, Classe, UE, ECUE,
-    Etudiant, Inscription, Semestre, Niveau, PaiementScolarite,
+    Etudiant, Inscription, Semestre, Niveau, PaiementScolarite, Enseignant,
 )
 
 
@@ -59,6 +59,21 @@ class PaiementScolariteSerializer(serializers.ModelSerializer):
 
     def get_etudiant_nom(self, obj):
         return f"{obj.etudiant.nom} {obj.etudiant.prenom}"
+
+
+class EnseignantSerializer(serializers.ModelSerializer):
+    specialite_libelle = serializers.CharField(source='specialite.libelle', read_only=True)
+    grade_display      = serializers.CharField(source='get_grade_display', read_only=True)
+    nom_complet        = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Enseignant
+        fields = [
+            'id', 'nom', 'prenom', 'nom_complet', 'sexe', 'email', 'tel',
+            'grade', 'grade_display', 'specialite', 'specialite_libelle',
+            'etat', 'etablissement', 'created_at',
+        ]
+        read_only_fields = ['id', 'nom_complet', 'created_at']
 
 
 class ClasseSerializer(serializers.ModelSerializer):

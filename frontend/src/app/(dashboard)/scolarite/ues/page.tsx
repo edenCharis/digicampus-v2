@@ -1,13 +1,9 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
-import { Search, Plus, ChevronLeft, ChevronRight, BookOpen, Trash2, PlusCircle } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Plus, Pencil, Trash2, BookOpen, Search, X, PlusCircle } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { SelectNative } from '@/components/ui/select-native'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+
+const PAGE_SIZE = 20
 
 interface Specialite { id: number; libelle: string; code: string }
 interface ECUE { id?: number; code: string; libelle: string; credits: number; coefficient: number; ue?: number }
@@ -15,67 +11,150 @@ interface UE {
   id: number; code: string; libelle: string; semestre: string; niveau: string
   credits: number; specialite: number; specialite_libelle: string; etablissement: number; ecues: ECUE[]
 }
-interface ApiList<T> { count: number; next: string | null; previous: string | null; results: T[] }
+interface ApiList<T> { count: number; results: T[] }
 
 const NIVEAUX  = ['L1','L2','L3','M1','M2','D1','D2','D3']
 const SEMESTRES = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10']
-const PAGE_SIZE = 25
 
-const SEM_COLOR: Record<string, { bg: string; text: string }> = {
-  S1:  { bg: 'rgba(26,175,230,0.12)',  text: '#1AAFE6' },
-  S2:  { bg: 'rgba(14,165,233,0.12)',  text: '#0ea5e9' },
-  S3:  { bg: 'rgba(139,92,246,0.12)',  text: '#8b5cf6' },
-  S4:  { bg: 'rgba(124,58,237,0.12)',  text: '#7c3aed' },
-  S5:  { bg: 'rgba(34,197,94,0.12)',   text: '#22c55e' },
-  S6:  { bg: 'rgba(16,185,129,0.12)',  text: '#10b981' },
-  S7:  { bg: 'rgba(245,158,11,0.12)',  text: '#f59e0b' },
-  S8:  { bg: 'rgba(239,68,68,0.12)',   text: '#ef4444' },
-  S9:  { bg: 'rgba(249,115,22,0.12)',  text: '#f97316' },
-  S10: { bg: 'rgba(168,85,247,0.12)',  text: '#a855f7' },
+const NIV_COLORS: Record<string, { bg: string; color: string }> = {
+  L1:{bg:'rgba(26,175,230,0.1)',color:'#1AAFE6'},  L2:{bg:'rgba(14,165,233,0.1)',color:'#0ea5e9'},
+  L3:{bg:'rgba(6,182,212,0.1)',color:'#06b6d4'},   M1:{bg:'rgba(139,92,246,0.1)',color:'#8b5cf6'},
+  M2:{bg:'rgba(124,58,237,0.1)',color:'#7c3aed'},  D1:{bg:'rgba(245,158,11,0.1)',color:'#f59e0b'},
+  D2:{bg:'rgba(217,119,6,0.1)',color:'#d97706'},   D3:{bg:'rgba(180,83,9,0.1)',color:'#b45309'},
+}
+const SEM_COLORS: Record<string, string> = {
+  S1:'#1AAFE6',S2:'#0ea5e9',S3:'#8b5cf6',S4:'#7c3aed',S5:'#22c55e',
+  S6:'#10b981',S7:'#f59e0b',S8:'#ef4444',S9:'#f97316',S10:'#a855f7',
 }
 
 function emptyEcue(): ECUE { return { code: '', libelle: '', credits: 0, coefficient: 1 } }
 
-export default function UEsPage() {
-  const [data, setData]             = useState<ApiList<UE> | null>(null)
-  const [specialites, setSpecialites] = useState<Specialite[]>([])
-  const [search, setSearch]         = useState('')
-  const [filterNiveau, setFilterNiveau] = useState('')
-  const [filterSem, setFilterSem]   = useState('')
-  const [filterSpec, setFilterSpec] = useState('')
-  const [page, setPage]             = useState(1)
-  const [loading, setLoading]       = useState(true)
-  const [open, setOpen]             = useState(false)
-  const [editTarget, setEditTarget] = useState<UE | null>(null)
-  const [form, setForm]             = useState({ code: '', libelle: '', niveau: 'L1', semestre: 'S1', credits: '', specialite: '' })
-  const [ecues, setEcues]           = useState<ECUE[]>([emptyEcue()])
-  const [saving, setSaving]         = useState(false)
-  const [error, setError]           = useState<string | null>(null)
+const STYLE = (
+  <style>{`
+    :root { --br: #e2e8f0; --bg: #f8fafc; }
+    .sc-wrap { background:#fff; border:1px solid var(--br); border-radius:14px; overflow:hidden; }
+    .sc-toolbar { display:flex; align-items:center; gap:.75rem; padding:.875rem 1.125rem; border-bottom:1px solid var(--br); flex-wrap:wrap; }
+    .sc-search { display:flex; align-items:center; gap:.5rem; background:var(--bg); border:1px solid var(--br); border-radius:8px; padding:.45rem .75rem; flex:1; min-width:180px; max-width:320px; }
+    .sc-search input { background:none; border:none; outline:none; font-size:.8125rem; color:#334155; width:100%; }
+    .sc-search input::placeholder { color:#94a3b8; }
+    .sc-sel { background:var(--bg); border:1px solid var(--br); border-radius:8px; padding:.45rem .75rem; font-size:.8125rem; color:#475569; cursor:pointer; outline:none; }
+    .sc-sel:focus { border-color:#1AAFE6; }
+    .sc-table { width:100%; border-collapse:collapse; }
+    .sc-table th { padding:.75rem 1.125rem; text-align:left; font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--br); background:var(--bg); white-space:nowrap; }
+    .sc-table td { padding:.75rem 1.125rem; font-size:.8125rem; color:#334155; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    .sc-table tr:last-child td { border-bottom:none; }
+    .sc-table tr:hover td { background:#f8fafc; }
+    .sc-primary { font-weight:600; color:#0f172a; }
+    .sc-sub { font-size:.75rem; color:#94a3b8; margin-top:1px; }
+    .sc-badge { display:inline-flex; align-items:center; padding:.25rem .625rem; border-radius:99px; font-size:.7rem; font-weight:700; white-space:nowrap; }
+    .sc-mono { font-family:monospace; font-weight:700; font-size:.8125rem; color:#1AAFE6; }
+    .sc-actions { display:flex; align-items:center; gap:.25rem; }
+    .sc-btn { padding:.35rem .5rem; border:none; background:none; border-radius:7px; cursor:pointer; color:#94a3b8; display:flex; align-items:center; transition:all .15s; }
+    .sc-btn:hover { background:#f1f5f9; color:#475569; }
+    .sc-btn.del:hover { background:rgba(239,68,68,0.08); color:#ef4444; }
+    .sc-footer { display:flex; align-items:center; justify-content:space-between; padding:.75rem 1.125rem; border-top:1px solid var(--br); }
+    .sc-count { font-size:.75rem; color:#94a3b8; }
+    .sc-pager { display:flex; gap:.25rem; }
+    .sc-pg { padding:.35rem .6rem; border:1px solid var(--br); border-radius:7px; background:#fff; font-size:.75rem; cursor:pointer; color:#64748b; transition:all .15s; min-width:2rem; text-align:center; }
+    .sc-pg:hover { background:#f8fafc; }
+    .sc-pg.cur { background:#1AAFE6; color:#fff; border-color:#1AAFE6; font-weight:700; }
+    .sc-pg.dot { border:none; background:none; cursor:default; color:#94a3b8; }
+    .sc-add { display:inline-flex; align-items:center; gap:.375rem; background:#1AAFE6; color:#fff; border:none; border-radius:9px; padding:.5rem 1rem; font-size:.8125rem; font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap; }
+    .sc-add:hover { background:#0d9ed4; }
+    .sc-empty { padding:2.5rem 1rem; text-align:center; color:#94a3b8; font-size:.875rem; }
+    .pg-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+    .pg-title  { font-size:1.125rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; margin:0; }
+    .pg-sub    { font-size:.75rem; color:#94a3b8; margin:.25rem 0 0; }
+    .mo { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:flex; align-items:flex-end; justify-content:center; }
+    @media(min-width:640px){ .mo { align-items:center; } }
+    .mo-box { background:#fff; border-radius:16px 16px 0 0; width:100%; max-width:600px; max-height:92vh; overflow-y:auto; display:flex; flex-direction:column; }
+    @media(min-width:640px){ .mo-box { border-radius:16px; } }
+    .mo-head { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem 1rem; border-bottom:1px solid #f1f5f9; flex-shrink:0; }
+    .mo-title { font-size:1rem; font-weight:700; color:#0f172a; }
+    .mo-x { background:none; border:none; cursor:pointer; color:#94a3b8; padding:4px; border-radius:7px; }
+    .mo-x:hover { background:#f1f5f9; color:#475569; }
+    .mo-body { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:.875rem; flex:1; }
+    .mo-foot { display:flex; justify-content:flex-end; gap:.5rem; padding:1rem 1.5rem; border-top:1px solid #f1f5f9; flex-shrink:0; }
+    .fl { display:flex; flex-direction:column; gap:.375rem; }
+    .fl label { font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; }
+    .fl label span { color:#ef4444; margin-left:2px; }
+    .fl input, .fl select { width:100%; border:1px solid #e2e8f0; border-radius:9px; padding:.55rem .75rem; font-size:.875rem; color:#334155; outline:none; transition:border .15s; background:#fff; }
+    .fl input:focus, .fl select:focus { border-color:#1AAFE6; }
+    .fl-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.875rem; }
+    .fl-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.875rem; }
+    .mo-section { font-size:.65rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.1em; padding:.125rem 0; border-bottom:1px solid #f1f5f9; margin-bottom:.125rem; }
+    .btn-cancel { background:#f1f5f9; border:none; border-radius:9px; padding:.55rem 1.125rem; font-size:.875rem; font-weight:600; color:#475569; cursor:pointer; }
+    .btn-cancel:hover { background:#e2e8f0; }
+    .btn-save { background:#1AAFE6; border:none; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:600; color:#fff; cursor:pointer; }
+    .btn-save:hover { background:#0d9ed4; }
+    .btn-save:disabled { opacity:.6; cursor:not-allowed; }
+    .err { background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:.65rem .875rem; font-size:.8rem; color:#dc2626; }
 
-  useEffect(() => {
-    apiFetch<ApiList<Specialite>>('/specialites/?limit=200').then(r => setSpecialites(r.results)).catch(console.error)
-  }, [])
+    /* ECUEs inline table */
+    .ecue-table { width:100%; border-collapse:collapse; margin-top:.25rem; }
+    .ecue-table th { font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; padding:.4rem .5rem; text-align:left; background:#f8fafc; border-bottom:1px solid #e2e8f0; }
+    .ecue-table td { padding:.3rem .5rem; vertical-align:middle; }
+    .ecue-table input { border:1px solid #e2e8f0; border-radius:6px; padding:.3rem .5rem; font-size:.8rem; width:100%; outline:none; background:#fff; }
+    .ecue-table input:focus { border-color:#1AAFE6; }
+    .ecue-add-btn { display:inline-flex; align-items:center; gap:.3rem; font-size:.75rem; color:#1AAFE6; background:none; border:none; cursor:pointer; padding:.25rem 0; font-weight:600; }
+    .ecue-del { background:none; border:none; cursor:pointer; color:#cbd5e1; padding:2px 4px; border-radius:5px; }
+    .ecue-del:hover { color:#ef4444; background:rgba(239,68,68,0.08); }
+    .ecue-chip { display:inline-flex; align-items:center; padding:.15rem .45rem; border-radius:6px; font-size:.7rem; font-weight:700; background:rgba(26,175,230,0.1); color:#1AAFE6; margin:.1rem; }
+  `}</style>
+)
+
+export default function UEsPage() {
+  const [all, setAll]             = useState<UE[]>([])
+  const [specialites, setSpecialites] = useState<Specialite[]>([])
+  const [search, setSearch]       = useState('')
+  const [filterNiveau, setFilterNiveau] = useState('')
+  const [filterSem, setFilterSem] = useState('')
+  const [filterSpec, setFilterSpec] = useState('')
+  const [page, setPage]           = useState(1)
+  const [loading, setLoading]     = useState(true)
+  const [open, setOpen]           = useState(false)
+  const [editTarget, setEditTarget] = useState<UE | null>(null)
+  const [form, setForm]           = useState({ code: '', libelle: '', niveau: 'L1', semestre: 'S1', credits: '', specialite: '' })
+  const [ecues, setEcues]         = useState<ECUE[]>([emptyEcue()])
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState<string | null>(null)
+  const [delTarget, setDelTarget] = useState<UE | null>(null)
+  const [deleting, setDeleting]   = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
-    const p = new URLSearchParams()
-    if (search)       p.set('search', search)
-    if (filterNiveau) p.set('niveau', filterNiveau)
-    if (filterSem)    p.set('semestre', filterSem)
-    if (filterSpec)   p.set('specialite', filterSpec)
-    p.set('limit', String(PAGE_SIZE))
-    p.set('offset', String((page - 1) * PAGE_SIZE))
-    apiFetch<ApiList<UE>>(`/ues/?${p}`).then(setData).catch(console.error).finally(() => setLoading(false))
-  }, [search, filterNiveau, filterSem, filterSpec, page])
+    apiFetch<ApiList<UE>>('/ues/?limit=500')
+      .then(r => setAll(r.results))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    apiFetch<ApiList<Specialite>>('/specialites/?limit=200')
+      .then(r => setSpecialites(r.results)).catch(console.error)
+  }, [])
+
+  const filtered = useMemo(() => {
+    let r = all
+    if (search) {
+      const q = search.toLowerCase()
+      r = r.filter(u => u.code.toLowerCase().includes(q) || u.libelle.toLowerCase().includes(q))
+    }
+    if (filterNiveau) r = r.filter(u => u.niveau === filterNiveau)
+    if (filterSem)    r = r.filter(u => u.semestre === filterSem)
+    if (filterSpec)   r = r.filter(u => u.specialite === Number(filterSpec))
+    return r
+  }, [all, search, filterNiveau, filterSem, filterSpec])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   function openAdd() {
     setEditTarget(null)
     setForm({ code: '', libelle: '', niveau: 'L1', semestre: 'S1', credits: '', specialite: specialites[0]?.id.toString() ?? '' })
     setEcues([emptyEcue()]); setError(null); setOpen(true)
   }
-
   function openEdit(ue: UE) {
     setEditTarget(ue)
     setForm({ code: ue.code, libelle: ue.libelle, niveau: ue.niveau, semestre: ue.semestre, credits: ue.credits.toString(), specialite: ue.specialite.toString() })
@@ -84,14 +163,21 @@ export default function UEsPage() {
   }
 
   function updateEcue(idx: number, field: keyof ECUE, val: string) {
-    setEcues(prev => prev.map((e, i) => i === idx ? { ...e, [field]: field === 'credits' || field === 'coefficient' ? Number(val) : val } : e))
+    setEcues(prev => prev.map((e, i) => i === idx
+      ? { ...e, [field]: field === 'credits' || field === 'coefficient' ? Number(val) : val }
+      : e
+    ))
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setError(null)
+  async function handleSave(ev: React.FormEvent) {
+    ev.preventDefault(); setSaving(true); setError(null)
     try {
       const user = JSON.parse(localStorage.getItem('dc_user') ?? '{}')
-      const ueBody = { code: form.code, libelle: form.libelle, niveau: form.niveau, semestre: form.semestre, credits: Number(form.credits) || 0, specialite: Number(form.specialite), etablissement: user.etablissement }
+      const ueBody = {
+        code: form.code, libelle: form.libelle, niveau: form.niveau,
+        semestre: form.semestre, credits: Number(form.credits) || 0,
+        specialite: Number(form.specialite), etablissement: user.etablissement,
+      }
       let ueId: number
       if (editTarget) {
         const updated = await apiFetch<UE>(`/ues/${editTarget.id}/`, { method: 'PATCH', body: JSON.stringify(ueBody) })
@@ -113,193 +199,247 @@ export default function UEsPage() {
     } finally { setSaving(false) }
   }
 
-  const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0
+  async function handleDelete() {
+    if (!delTarget) return
+    setDeleting(true)
+    try {
+      await apiFetch(`/ues/${delTarget.id}/`, { method: 'DELETE' })
+      setDelTarget(null); load()
+    } catch { setDeleting(false) }
+  }
+
+  function pagerPages(): (number | '…')[] {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    const arr: (number | '…')[] = [1]
+    if (page > 3) arr.push('…')
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) arr.push(i)
+    if (page < totalPages - 2) arr.push('…')
+    arr.push(totalPages)
+    return arr
+  }
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <>
+      {STYLE}
+      <div className="pg-header">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Unités d&apos;Enseignement</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Configuration des UE et éléments constitutifs (ECUE)</p>
+          <h1 className="pg-title">Unités d&apos;Enseignement</h1>
+          <p className="pg-sub">{loading ? '…' : `${filtered.length} UE${filtered.length !== 1 ? 's' : ''}`}</p>
         </div>
-        <Button onClick={openAdd}><Plus size={15} /> Ajouter une UE</Button>
+        <button className="sc-add" onClick={openAdd}><Plus size={14} /> Ajouter une UE</button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex gap-2.5 flex-wrap">
-        <div className="relative flex-1 min-w-[220px] max-w-[340px]">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <Input className="pl-8" placeholder="Code ou libellé…" value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }} />
+      <div className="sc-wrap">
+        <div className="sc-toolbar">
+          <div className="sc-search">
+            <Search size={13} color="#94a3b8" />
+            <input placeholder="Code ou libellé…" value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }} />
+          </div>
+          <select className="sc-sel" value={filterNiveau} onChange={e => { setFilterNiveau(e.target.value); setPage(1) }}>
+            <option value="">Tous niveaux</option>
+            {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select className="sc-sel" value={filterSem} onChange={e => { setFilterSem(e.target.value); setPage(1) }}>
+            <option value="">Tous semestres</option>
+            {SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select className="sc-sel" value={filterSpec} onChange={e => { setFilterSpec(e.target.value); setPage(1) }}>
+            <option value="">Toutes spécialités</option>
+            {specialites.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
+          </select>
         </div>
-        <SelectNative className="w-auto" value={filterNiveau} onChange={e => { setFilterNiveau(e.target.value); setPage(1) }}>
-          <option value="">Tous niveaux</option>
-          {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-        </SelectNative>
-        <SelectNative className="w-auto" value={filterSem} onChange={e => { setFilterSem(e.target.value); setPage(1) }}>
-          <option value="">Tous semestres</option>
-          {SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}
-        </SelectNative>
-        <SelectNative className="w-auto" value={filterSpec} onChange={e => { setFilterSpec(e.target.value); setPage(1) }}>
-          <option value="">Toutes spécialités</option>
-          {specialites.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
-        </SelectNative>
-      </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Libellé UE</TableHead>
-              <TableHead>Sem.</TableHead>
-              <TableHead>Niveau</TableHead>
-              <TableHead>Crédits</TableHead>
-              <TableHead>ECUEs</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-slate-400 py-10">Chargement…</TableCell></TableRow>
-            ) : data?.results.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-14 text-center">
-                  <BookOpen size={36} className="mx-auto mb-2 text-slate-200" />
-                  <p className="text-slate-400 text-sm">Aucune UE trouvée</p>
-                </TableCell>
-              </TableRow>
-            ) : data?.results.map(ue => {
-              const sc = SEM_COLOR[ue.semestre] ?? { bg: 'rgba(100,116,139,0.12)', text: '#64748b' }
-              return (
-                <TableRow key={ue.id} className="cursor-pointer" onClick={() => openEdit(ue)}>
-                  <TableCell className="font-mono font-bold text-brand text-[13px]">{ue.code}</TableCell>
-                  <TableCell>
-                    <div className="font-semibold text-slate-900">{ue.libelle}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{ue.specialite_libelle}</div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: sc.bg, color: sc.text }}>{ue.semestre}</span>
-                  </TableCell>
-                  <TableCell className="text-slate-500 text-xs font-semibold">{ue.niveau}</TableCell>
-                  <TableCell className="font-semibold">{ue.credits}</TableCell>
-                  <TableCell>
-                    {ue.ecues.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {ue.ecues.map(ec => (
-                          <span key={ec.id} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-brand/10 text-brand">{ec.code}</span>
-                        ))}
+        <div style={{ overflowX: 'auto' }}>
+          <table className="sc-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Libellé UE</th>
+                <th>Sem.</th>
+                <th>Niveau</th>
+                <th>Crédits</th>
+                <th>ECUEs</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} className="sc-empty">Chargement…</td></tr>
+              ) : paged.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="sc-empty">
+                    <BookOpen size={36} color="#e2e8f0" style={{ margin: '0 auto .5rem', display: 'block' }} />
+                    Aucune UE trouvée
+                  </td>
+                </tr>
+              ) : paged.map(ue => {
+                const nc = NIV_COLORS[ue.niveau] ?? { bg: '#f1f5f9', color: '#64748b' }
+                const sc = SEM_COLORS[ue.semestre] ?? '#64748b'
+                return (
+                  <tr key={ue.id}>
+                    <td><span className="sc-mono">{ue.code}</span></td>
+                    <td>
+                      <div className="sc-primary">{ue.libelle}</div>
+                      <div className="sc-sub">{ue.specialite_libelle}</div>
+                    </td>
+                    <td>
+                      <span className="sc-badge" style={{ background: `${sc}1a`, color: sc }}>{ue.semestre}</span>
+                    </td>
+                    <td>
+                      <span className="sc-badge" style={{ background: nc.bg, color: nc.color }}>{ue.niveau}</span>
+                    </td>
+                    <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{ue.credits}</td>
+                    <td>
+                      {ue.ecues.length > 0
+                        ? <div>{ue.ecues.map(ec => <span key={ec.id} className="ecue-chip">{ec.code}</span>)}</div>
+                        : <span style={{ color: '#cbd5e1', fontSize: '.8rem' }}>—</span>
+                      }
+                    </td>
+                    <td>
+                      <div className="sc-actions">
+                        <button className="sc-btn" onClick={() => openEdit(ue)} title="Modifier"><Pencil size={14} /></button>
+                        <button className="sc-btn del" onClick={() => setDelTarget(ue)} title="Supprimer"><Trash2 size={14} /></button>
                       </div>
-                    ) : <span className="text-slate-300 text-xs">—</span>}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className="text-xs font-medium text-brand">Modifier →</span>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
 
-        {data && data.count > PAGE_SIZE && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-xs text-slate-500">{data.count} UE{data.count > 1 ? 's' : ''} · Page {page}/{totalPages}</span>
-            <div className="flex gap-1">
-              <button className={cn('p-1.5 rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors', page <= 1 && 'opacity-40 pointer-events-none')}
-                onClick={() => setPage(p => p - 1)}><ChevronLeft size={14} /></button>
-              <button className={cn('p-1.5 rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors', page >= totalPages && 'opacity-40 pointer-events-none')}
-                onClick={() => setPage(p => p + 1)}><ChevronRight size={14} /></button>
+        {totalPages > 1 && (
+          <div className="sc-footer">
+            <span className="sc-count">{filtered.length} UE{filtered.length !== 1 ? 's' : ''} · Page {page}/{totalPages}</span>
+            <div className="sc-pager">
+              {pagerPages().map((p, i) =>
+                p === '…'
+                  ? <span key={i} className="sc-pg dot">…</span>
+                  : <button key={p} className={`sc-pg${page === p ? ' cur' : ''}`} onClick={() => setPage(p as number)}>{p}</button>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier l\'UE' : 'Nouvelle UE'}</DialogTitle>
-            <DialogDescription>Renseignez les informations de l'unité d'enseignement et ses éléments constitutifs.</DialogDescription>
-          </DialogHeader>
-          {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 mb-2">{error}</div>
-          )}
-          <form onSubmit={handleSave} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Code UE <span className="text-red-400">*</span></label>
-                <Input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} required placeholder="UE-INFO-101" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Crédits</label>
-                <Input type="number" min="0" value={form.credits} onChange={e => setForm({ ...form, credits: e.target.value })} placeholder="3" />
-              </div>
+      {/* Add / Edit modal */}
+      {open && (
+        <div className="mo" onClick={e => e.target === e.currentTarget && setOpen(false)}>
+          <div className="mo-box">
+            <div className="mo-head">
+              <span className="mo-title">{editTarget ? 'Modifier l\'UE' : 'Nouvelle UE'}</span>
+              <button className="mo-x" onClick={() => setOpen(false)}><X size={16} /></button>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Libellé <span className="text-red-400">*</span></label>
-              <Input value={form.libelle} onChange={e => setForm({ ...form, libelle: e.target.value })} required placeholder="Algorithmique et Structures de Données" />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Niveau <span className="text-red-400">*</span></label>
-                <SelectNative value={form.niveau} onChange={e => setForm({ ...form, niveau: e.target.value })}>
-                  {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-                </SelectNative>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Semestre <span className="text-red-400">*</span></label>
-                <SelectNative value={form.semestre} onChange={e => setForm({ ...form, semestre: e.target.value })}>
-                  {SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}
-                </SelectNative>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Spécialité <span className="text-red-400">*</span></label>
-                <SelectNative value={form.specialite} onChange={e => setForm({ ...form, specialite: e.target.value })} required>
-                  <option value="">— Choisir —</option>
-                  {specialites.map(s => <option key={s.id} value={s.id}>{s.code} — {s.libelle}</option>)}
-                </SelectNative>
-              </div>
-            </div>
+            <form onSubmit={handleSave}>
+              <div className="mo-body">
+                {error && <div className="err">{error}</div>}
 
-            {/* ECUEs */}
-            <div>
-              <div className="flex items-center justify-between mb-2 mt-1">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">ECUEs (éléments constitutifs)</span>
-                <button type="button" onClick={() => setEcues(p => [...p, emptyEcue()])}
-                  className="flex items-center gap-1.5 text-xs font-medium text-brand hover:text-brand-dark transition-colors">
-                  <PlusCircle size={13} /> Ajouter ECUE
+                <div className="mo-section">Unité d&apos;enseignement</div>
+                <div className="fl-grid2">
+                  <div className="fl">
+                    <label>Code UE <span>*</span></label>
+                    <input required value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} placeholder="UE-INFO-101" />
+                  </div>
+                  <div className="fl">
+                    <label>Crédits</label>
+                    <input type="number" min="0" value={form.credits} onChange={e => setForm({ ...form, credits: e.target.value })} placeholder="3" />
+                  </div>
+                </div>
+                <div className="fl">
+                  <label>Libellé <span>*</span></label>
+                  <input required value={form.libelle} onChange={e => setForm({ ...form, libelle: e.target.value })} placeholder="Algorithmique et Structures de Données" />
+                </div>
+                <div className="fl-grid3">
+                  <div className="fl">
+                    <label>Niveau <span>*</span></label>
+                    <select value={form.niveau} onChange={e => setForm({ ...form, niveau: e.target.value })}>
+                      {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <div className="fl">
+                    <label>Semestre <span>*</span></label>
+                    <select value={form.semestre} onChange={e => setForm({ ...form, semestre: e.target.value })}>
+                      {SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="fl">
+                    <label>Spécialité <span>*</span></label>
+                    <select required value={form.specialite} onChange={e => setForm({ ...form, specialite: e.target.value })}>
+                      <option value="">— choisir —</option>
+                      {specialites.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mo-section">Éléments constitutifs (ECUEs)</div>
+                <table className="ecue-table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th style={{ width: '45%' }}>Libellé</th>
+                      <th>Crédits</th>
+                      <th>Coef.</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ecues.map((ec, idx) => (
+                      <tr key={idx}>
+                        <td><input value={ec.code} onChange={e => updateEcue(idx, 'code', e.target.value)} placeholder="ECUE-01" /></td>
+                        <td><input value={ec.libelle} onChange={e => updateEcue(idx, 'libelle', e.target.value)} placeholder="Intitulé de l'ECUE" /></td>
+                        <td><input type="number" min="0" step="0.5" value={ec.credits} onChange={e => updateEcue(idx, 'credits', e.target.value)} /></td>
+                        <td><input type="number" min="0" step="0.5" value={ec.coefficient} onChange={e => updateEcue(idx, 'coefficient', e.target.value)} /></td>
+                        <td>
+                          {ecues.length > 1 && (
+                            <button type="button" className="ecue-del"
+                              onClick={() => setEcues(prev => prev.filter((_, i) => i !== idx))}>
+                              <X size={12} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button type="button" className="ecue-add-btn"
+                  onClick={() => setEcues(prev => [...prev, emptyEcue()])}>
+                  <PlusCircle size={13} /> Ajouter un ECUE
                 </button>
               </div>
-              <div className="grid grid-cols-[1fr_2fr_56px_56px_32px] gap-1.5 mb-1 px-0.5">
-                {['Code', 'Libellé', 'Cred.', 'Coef.', ''].map(h => (
-                  <span key={h} className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{h}</span>
-                ))}
+              <div className="mo-foot">
+                <button type="button" className="btn-cancel" onClick={() => setOpen(false)}>Annuler</button>
+                <button type="submit" className="btn-save" disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
               </div>
-              <div className="space-y-1.5">
-                {ecues.map((ec, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_2fr_56px_56px_32px] gap-1.5 items-center">
-                    <Input className="text-xs h-8 px-2" placeholder="CODE" value={ec.code} onChange={e => updateEcue(idx, 'code', e.target.value)} />
-                    <Input className="text-xs h-8 px-2" placeholder="Libellé ECUE" value={ec.libelle} onChange={e => updateEcue(idx, 'libelle', e.target.value)} />
-                    <Input className="text-xs h-8 px-2 text-center" type="number" min="0" placeholder="0" value={ec.credits} onChange={e => updateEcue(idx, 'credits', e.target.value)} />
-                    <Input className="text-xs h-8 px-2 text-center" type="number" min="0" step="0.5" placeholder="1" value={ec.coefficient} onChange={e => updateEcue(idx, 'coefficient', e.target.value)} />
-                    <button type="button" onClick={() => setEcues(p => p.filter((_, i) => i !== idx))}
-                      className="flex items-center justify-center w-7 h-7 rounded text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>Annuler</Button>
-              <Button type="submit" size="sm" disabled={saving}>{saving ? 'Enregistrement…' : editTarget ? 'Mettre à jour' : 'Enregistrer'}</Button>
+      {/* Delete confirm */}
+      {delTarget && (
+        <div className="mo" onClick={e => e.target === e.currentTarget && setDelTarget(null)}>
+          <div className="mo-box" style={{ maxWidth: 400 }}>
+            <div className="mo-head">
+              <span className="mo-title">Supprimer l&apos;UE</span>
+              <button className="mo-x" onClick={() => setDelTarget(null)}><X size={16} /></button>
             </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <div className="mo-body">
+              <p style={{ fontSize: '.875rem', color: '#475569' }}>
+                Supprimer l&apos;UE <strong>{delTarget.code} — {delTarget.libelle}</strong> ?
+                Tous ses ECUEs seront également supprimés.
+              </p>
+            </div>
+            <div className="mo-foot">
+              <button className="btn-cancel" onClick={() => setDelTarget(null)}>Annuler</button>
+              <button className="btn-save" style={{ background: '#ef4444' }}
+                onClick={handleDelete} disabled={deleting}>
+                {deleting ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

@@ -28,4 +28,6 @@ urlpatterns = [
     path('inscriptions/', views.InscriptionListView.as_view(), name='inscriptions'),
     path('inscriptions/create/', views.InscriptionCreateView.as_view(), name='inscription-create'),
     path('inscriptions/reinscription/', views.ReinscriptionView.as_view(), name='reinscription'),
+    path('enseignants/', views.EnseignantListView.as_view(), name='enseignants'),
+    path('enseignants/<int:pk>/', views.EnseignantDetailView.as_view(), name='enseignant-detail'),
 ]

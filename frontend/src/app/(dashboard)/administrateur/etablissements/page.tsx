@@ -46,7 +46,9 @@ export default function EtablissementsPage() {
 
   function openAdd() {
     setEditing(null)
-    setForm({ code: '', libelle: '', university: univs[0] ? String(univs[0].id) : '', email: '', tel: '', ville: '' })
+    // default to the currently selected filter university, or first in list
+    const defaultUniv = filterUniv || (univs[0] ? String(univs[0].id) : '')
+    setForm({ code: '', libelle: '', university: defaultUniv, email: '', tel: '', ville: '' })
     setErr(null); setOpen(true)
   }
   function openEdit(e: Etablissement) {
@@ -62,9 +64,14 @@ export default function EtablissementsPage() {
       const body = { ...form, university: Number(form.university) }
       if (!editing) await apiFetch('/etablissements/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/etablissements/${editing.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      setOpen(false); load()
+      setOpen(false)
+      // align filter with the saved item's university so it's visible immediately
+      setFilterUniv(form.university)
     } catch (e: unknown) {
-      const msg = e && typeof e === 'object' && 'detail' in e ? String((e as {detail: string}).detail) : 'Erreur lors de la sauvegarde'
+      const raw = e && typeof e === 'object' ? e as Record<string, unknown> : {}
+      const msg = typeof raw.detail === 'string'
+        ? raw.detail
+        : Object.values(raw).flat().join(' ') || 'Erreur lors de la sauvegarde'
       setErr(msg)
     } finally { setSaving(false) }
   }

@@ -96,7 +96,9 @@ export default function SpecialitesPage() {
 
   const load = useCallback(() => {
     setLoading(true)
-    apiFetch<ApiList<Specialite>>('/specialites/?limit=500')
+    const me = getMe()
+    const q = me?.etablissement ? `?etablissement=${me.etablissement}&limit=500` : '?limit=500'
+    apiFetch<ApiList<Specialite>>(`/specialites/${q}`)
       .then(r => setList(r.results))
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -104,8 +106,10 @@ export default function SpecialitesPage() {
 
   useEffect(() => { load() }, [load])
   useEffect(() => {
-    apiFetch<ApiList<Cycle>>('/cycles/?limit=100').then(r => setCycles(r.results)).catch(console.error)
-    apiFetch<ApiList<Parcours>>('/parcours/?limit=100').then(r => setParcours(r.results)).catch(console.error)
+    const me = getMe()
+    const etabQ = me?.etablissement ? `&etablissement=${me.etablissement}` : ''
+    apiFetch<ApiList<Cycle>>(`/cycles/?limit=100${etabQ}`).then(r => setCycles(r.results)).catch(console.error)
+    apiFetch<ApiList<Parcours>>(`/parcours/?limit=100${etabQ}`).then(r => setParcours(r.results)).catch(console.error)
   }, [])
 
   const filtered = useMemo(() => {

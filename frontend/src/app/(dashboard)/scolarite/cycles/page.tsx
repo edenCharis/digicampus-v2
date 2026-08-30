@@ -87,7 +87,9 @@ export default function CyclesPage() {
 
   const load = useCallback(() => {
     setLoading(true)
-    apiFetch<ApiList<Cycle>>('/cycles/?limit=200')
+    const me = getMe()
+    const q = me?.etablissement ? `?etablissement=${me.etablissement}&limit=200` : '?limit=200'
+    apiFetch<ApiList<Cycle>>(`/cycles/${q}`)
       .then(r => setList(r.results))
       .catch(console.error)
       .finally(() => setLoading(false))

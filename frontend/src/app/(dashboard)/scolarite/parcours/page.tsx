@@ -86,7 +86,9 @@ export default function ParcoursPage() {
 
   const load = useCallback(() => {
     setLoading(true)
-    apiFetch<ApiList<Parcours>>('/parcours/?limit=200')
+    const me = getMe()
+    const q = me?.etablissement ? `?etablissement=${me.etablissement}&limit=200` : '?limit=200'
+    apiFetch<ApiList<Parcours>>(`/parcours/${q}`)
       .then(r => setList(r.results))
       .catch(console.error)
       .finally(() => setLoading(false))

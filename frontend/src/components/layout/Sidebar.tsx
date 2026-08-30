@@ -7,7 +7,7 @@ import {
   UserCheck, Award, FileText, BarChart2, CreditCard, BookMarked,
   ShieldCheck, Briefcase, LogOut, X, ChevronRight, ChevronDown,
   Building2, Activity, Settings, Globe, CalendarDays, RotateCcw,
-  Layers, GitFork,
+  Layers, GitFork, LayoutGrid,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROLE_NAV } from '@/lib/permissions'
@@ -41,8 +41,13 @@ const ALL_NAV_ITEMS: SidebarItem[] = [
       { label: 'Niveaux',      href: '/administrateur/niveaux',        icon: <Layers size={15} /> },
     ],
   },
+  // Scolarité
+  { label: 'Tableau de bord',  href: '/scolarite',         icon: <BarChart2 size={17} />,    exact: true },
+  { label: 'Inscriptions',     href: '/scolarite/inscriptions', icon: <ClipboardList size={17} /> },
+  { label: 'Étudiants',        href: '/scolarite/etudiants',    icon: <Users size={17} /> },
+  { label: 'Classes',          href: '/scolarite/classes',      icon: <LayoutGrid size={17} /> },
+  { label: 'UEs & ECUEs',      href: '/scolarite/ues',          icon: <BookOpen size={17} /> },
   // Other roles
-  { label: 'Scolarité',        href: '/scolarite',   icon: <GraduationCap size={17} /> },
   { label: 'Doyen',            href: '/doyen',        icon: <Briefcase size={17} /> },
   { label: 'Enseignants',      href: '/enseignant',   icon: <Users size={17} /> },
   { label: 'Professeurs',      href: '/professeur',   icon: <UserCheck size={17} /> },

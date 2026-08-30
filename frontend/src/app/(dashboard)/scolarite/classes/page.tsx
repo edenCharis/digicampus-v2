@@ -1,227 +1,320 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
-import { Search, Plus, ChevronLeft, ChevronRight, LayoutGrid } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Plus, Pencil, Trash2, LayoutGrid, Search } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { SelectNative } from '@/components/ui/select-native'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+
+const PAGE_SIZE = 20
 
 interface Specialite { id: number; libelle: string; code: string }
 interface Classe {
   id: number; libelle: string; niveau: string; effectif: number
   specialite: number; specialite_libelle: string; etablissement: number
 }
-interface ApiList<T> { count: number; next: string | null; previous: string | null; results: T[] }
+interface ApiList<T> { count: number; results: T[] }
 
-const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2', 'D1', 'D2', 'D3']
-const PAGE_SIZE = 20
-
-const NIVEAU_COLOR: Record<string, { bg: string; color: string }> = {
-  L1: { bg: 'rgba(26,175,230,0.12)',  color: '#1AAFE6' },
-  L2: { bg: 'rgba(14,165,233,0.12)',  color: '#0ea5e9' },
-  L3: { bg: 'rgba(6,182,212,0.12)',   color: '#06b6d4' },
-  M1: { bg: 'rgba(139,92,246,0.12)',  color: '#8b5cf6' },
-  M2: { bg: 'rgba(124,58,237,0.12)',  color: '#7c3aed' },
-  D1: { bg: 'rgba(245,158,11,0.12)',  color: '#f59e0b' },
-  D2: { bg: 'rgba(217,119,6,0.12)',   color: '#d97706' },
-  D3: { bg: 'rgba(180,83,9,0.12)',    color: '#b45309' },
+const NIVEAU_COLORS: Record<string, { bg: string; color: string }> = {
+  L1: { bg: 'rgba(26,175,230,0.1)',  color: '#1AAFE6' },
+  L2: { bg: 'rgba(14,165,233,0.1)',  color: '#0ea5e9' },
+  L3: { bg: 'rgba(6,182,212,0.1)',   color: '#06b6d4' },
+  M1: { bg: 'rgba(139,92,246,0.1)',  color: '#8b5cf6' },
+  M2: { bg: 'rgba(124,58,237,0.1)',  color: '#7c3aed' },
+  D1: { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
+  D2: { bg: 'rgba(217,119,6,0.1)',   color: '#d97706' },
+  D3: { bg: 'rgba(180,83,9,0.1)',    color: '#b45309' },
 }
 
-function NiveauBadge({ niveau }: { niveau: string }) {
-  const c = NIVEAU_COLOR[niveau] ?? { bg: 'rgba(100,116,139,0.12)', color: '#64748b' }
+const NIVEAUX = ['L1','L2','L3','M1','M2','D1','D2','D3']
+
+const STYLE = (
+  <style>{`
+    :root { --br: #e2e8f0; --bg: #f8fafc; }
+    .sc-wrap { background:#fff; border:1px solid var(--br); border-radius:14px; overflow:hidden; }
+    .sc-toolbar { display:flex; align-items:center; gap:.75rem; padding:.875rem 1.125rem; border-bottom:1px solid var(--br); flex-wrap:wrap; }
+    .sc-search { display:flex; align-items:center; gap:.5rem; background:var(--bg); border:1px solid var(--br); border-radius:8px; padding:.45rem .75rem; flex:1; min-width:180px; max-width:320px; }
+    .sc-search input { background:none; border:none; outline:none; font-size:.8125rem; color:#334155; width:100%; }
+    .sc-search input::placeholder { color:#94a3b8; }
+    .sc-sel { background:var(--bg); border:1px solid var(--br); border-radius:8px; padding:.45rem .75rem; font-size:.8125rem; color:#475569; cursor:pointer; outline:none; }
+    .sc-sel:focus { border-color:#1AAFE6; }
+    .sc-table { width:100%; border-collapse:collapse; }
+    .sc-table th { padding:.75rem 1.125rem; text-align:left; font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--br); background:var(--bg); white-space:nowrap; }
+    .sc-table td { padding:.75rem 1.125rem; font-size:.8125rem; color:#334155; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    .sc-table tr:last-child td { border-bottom:none; }
+    .sc-table tr:hover td { background:#f8fafc; }
+    .sc-avatar { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .sc-row { display:flex; align-items:center; gap:.625rem; }
+    .sc-primary { font-weight:600; color:#0f172a; }
+    .sc-sub { font-size:.75rem; color:#94a3b8; margin-top:1px; }
+    .sc-badge { display:inline-flex; align-items:center; padding:.25rem .625rem; border-radius:99px; font-size:.7rem; font-weight:700; white-space:nowrap; }
+    .sc-actions { display:flex; align-items:center; gap:.25rem; }
+    .sc-btn { padding:.35rem .5rem; border:none; background:none; border-radius:7px; cursor:pointer; color:#94a3b8; display:flex; align-items:center; transition:all .15s; }
+    .sc-btn:hover { background:#f1f5f9; color:#475569; }
+    .sc-btn.del:hover { background:rgba(239,68,68,0.08); color:#ef4444; }
+    .sc-footer { display:flex; align-items:center; justify-content:space-between; padding:.75rem 1.125rem; border-top:1px solid var(--br); }
+    .sc-count { font-size:.75rem; color:#94a3b8; }
+    .sc-pager { display:flex; gap:.25rem; }
+    .sc-pg { padding:.35rem .6rem; border:1px solid var(--br); border-radius:7px; background:#fff; font-size:.75rem; cursor:pointer; color:#64748b; transition:all .15s; min-width:2rem; text-align:center; }
+    .sc-pg:hover { background:#f8fafc; }
+    .sc-pg.cur { background:#1AAFE6; color:#fff; border-color:#1AAFE6; font-weight:700; }
+    .sc-pg.dot { border:none; background:none; cursor:default; color:#94a3b8; }
+    .sc-add { display:inline-flex; align-items:center; gap:.375rem; background:#1AAFE6; color:#fff; border:none; border-radius:9px; padding:.5rem 1rem; font-size:.8125rem; font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap; }
+    .sc-add:hover { background:#0d9ed4; }
+    .sc-empty { padding:2.5rem 1rem; text-align:center; color:#94a3b8; font-size:.875rem; }
+    .pg-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+    .pg-title  { font-size:1.125rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; margin:0; }
+    .pg-sub    { font-size:.75rem; color:#94a3b8; margin:.25rem 0 0; }
+    .mo { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:flex; align-items:flex-end; justify-content:center; }
+    @media(min-width:640px){ .mo { align-items:center; } }
+    .mo-box { background:#fff; border-radius:16px 16px 0 0; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; }
+    @media(min-width:640px){ .mo-box { border-radius:16px; } }
+    .mo-head { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem 1rem; border-bottom:1px solid #f1f5f9; flex-shrink:0; }
+    .mo-title { font-size:1rem; font-weight:700; color:#0f172a; }
+    .mo-x { background:none; border:none; cursor:pointer; color:#94a3b8; padding:4px; border-radius:7px; }
+    .mo-x:hover { background:#f1f5f9; color:#475569; }
+    .mo-body { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:.875rem; flex:1; }
+    .mo-foot { display:flex; justify-content:flex-end; gap:.5rem; padding:1rem 1.5rem; border-top:1px solid #f1f5f9; flex-shrink:0; }
+    .fl { display:flex; flex-direction:column; gap:.375rem; }
+    .fl label { font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; }
+    .fl label span { color:#ef4444; margin-left:2px; }
+    .fl input, .fl select { width:100%; border:1px solid #e2e8f0; border-radius:9px; padding:.55rem .75rem; font-size:.875rem; color:#334155; outline:none; transition:border .15s; background:#fff; }
+    .fl input:focus, .fl select:focus { border-color:#1AAFE6; }
+    .fl-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.875rem; }
+    .err-box { background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:.625rem .875rem; font-size:.8125rem; color:#ef4444; }
+    .btn-ok { background:#1AAFE6; color:#fff; border:none; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:600; cursor:pointer; }
+    .btn-ok:hover { background:#0d9ed4; }
+    .btn-ok:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-cancel { background:none; border:1px solid #e2e8f0; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:500; color:#64748b; cursor:pointer; }
+    .btn-cancel:hover { background:#f8fafc; }
+  `}</style>
+)
+
+function Pager({ total, page, onPage }: { total: number; page: number; onPage: (p: number) => void }) {
+  const pages = Math.ceil(total / PAGE_SIZE)
+  if (pages <= 1) return null
+  const items: (number | 'dot')[] = []
+  for (let i = 1; i <= pages; i++) {
+    if (i === 1 || i === pages || Math.abs(i - page) <= 1) items.push(i)
+    else if (items[items.length - 1] !== 'dot') items.push('dot')
+  }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: c.bg, color: c.color }}>
-      {niveau}
-    </span>
+    <div className="sc-pager">
+      {items.map((it, idx) =>
+        it === 'dot'
+          ? <span key={`d${idx}`} className="sc-pg dot">…</span>
+          : <button key={it} className={`sc-pg${it === page ? ' cur' : ''}`} onClick={() => onPage(it)}>{it}</button>
+      )}
+    </div>
   )
 }
 
+function avatarColor(id: number) {
+  const COLORS = ['#1AAFE6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
+  return COLORS[id % COLORS.length]
+}
+
 export default function ClassesPage() {
-  const [data, setData]             = useState<ApiList<Classe> | null>(null)
-  const [specialites, setSpecialites] = useState<Specialite[]>([])
+  const [list, setList]             = useState<Classe[]>([])
+  const [specs, setSpecs]           = useState<Specialite[]>([])
   const [search, setSearch]         = useState('')
   const [filterNiveau, setFilterNiveau] = useState('')
   const [filterSpec, setFilterSpec] = useState('')
   const [page, setPage]             = useState(1)
-  const [loading, setLoading]       = useState(true)
   const [open, setOpen]             = useState(false)
-  const [editTarget, setEditTarget] = useState<Classe | null>(null)
-  const [form, setForm]             = useState({ libelle: '', niveau: 'L1', specialite: '', effectif: '' })
+  const [editing, setEditing]       = useState<Classe | null>(null)
+  const [del, setDel]               = useState<Classe | null>(null)
+  const [err, setErr]               = useState<string | null>(null)
   const [saving, setSaving]         = useState(false)
-  const [error, setError]           = useState<string | null>(null)
+  const [form, setForm]             = useState({ libelle: '', niveau: 'L1', specialite: '', effectif: '' })
 
-  useEffect(() => {
-    apiFetch<ApiList<Specialite>>('/specialites/?limit=200').then(r => setSpecialites(r.results)).catch(console.error)
+  const me = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('dc_user') || 'null') } catch { return null }
   }, [])
 
   const load = useCallback(() => {
-    setLoading(true)
-    const p = new URLSearchParams()
-    if (search)       p.set('search', search)
-    if (filterNiveau) p.set('niveau', filterNiveau)
-    if (filterSpec)   p.set('specialite', filterSpec)
-    p.set('limit', String(PAGE_SIZE))
-    p.set('offset', String((page - 1) * PAGE_SIZE))
-    apiFetch<ApiList<Classe>>(`/classes/?${p}`).then(setData).catch(console.error).finally(() => setLoading(false))
-  }, [search, filterNiveau, filterSpec, page])
+    apiFetch<ApiList<Classe>>('/classes/?limit=500').then(d => setList(d.results)).catch(() => {})
+  }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    apiFetch<ApiList<Specialite>>('/specialites/?limit=200').then(d => setSpecs(d.results)).catch(() => {})
+  }, [load])
+
+  const filtered = useMemo(() => {
+    let r = list
+    if (filterNiveau) r = r.filter(c => c.niveau === filterNiveau)
+    if (filterSpec) r = r.filter(c => c.specialite === Number(filterSpec))
+    const q = search.toLowerCase()
+    if (q) r = r.filter(c => c.libelle.toLowerCase().includes(q) || c.specialite_libelle?.toLowerCase().includes(q))
+    return r
+  }, [list, search, filterNiveau, filterSpec])
+
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   function openAdd() {
-    setEditTarget(null)
-    setForm({ libelle: '', niveau: 'L1', specialite: specialites[0]?.id.toString() ?? '', effectif: '' })
-    setError(null); setOpen(true)
+    setEditing(null)
+    setForm({ libelle: '', niveau: 'L1', specialite: '', effectif: '' })
+    setErr(null); setOpen(true)
   }
-
   function openEdit(c: Classe) {
-    setEditTarget(c)
-    setForm({ libelle: c.libelle, niveau: c.niveau, specialite: c.specialite.toString(), effectif: c.effectif.toString() })
-    setError(null); setOpen(true)
+    setEditing(c)
+    setForm({ libelle: c.libelle, niveau: c.niveau, specialite: String(c.specialite), effectif: String(c.effectif) })
+    setErr(null); setOpen(true)
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setError(null)
+  async function save() {
+    if (!form.libelle || !form.specialite) { setErr('Libellé et spécialité obligatoires'); return }
+    setSaving(true); setErr(null)
     try {
-      const user = JSON.parse(localStorage.getItem('dc_user') ?? '{}')
-      const body = { libelle: form.libelle, niveau: form.niveau, specialite: Number(form.specialite), effectif: Number(form.effectif) || 0, etablissement: user.etablissement }
-      if (editTarget) await apiFetch(`/classes/${editTarget.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      else await apiFetch('/classes/', { method: 'POST', body: JSON.stringify(body) })
+      const body = {
+        libelle: form.libelle, niveau: form.niveau,
+        specialite: Number(form.specialite),
+        effectif: form.effectif ? Number(form.effectif) : 0,
+        etablissement: me?.etablissement,
+      }
+      if (!editing) await apiFetch('/classes/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/classes/${editing.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setOpen(false); load()
-    } catch (err: unknown) {
-      const e = err as Record<string, string[]>
-      setError(Object.values(e).flat().join(' ') || 'Erreur lors de l\'enregistrement')
+    } catch (e: unknown) {
+      const raw = e && typeof e === 'object' ? e as Record<string, unknown> : {}
+      setErr(typeof raw.detail === 'string' ? raw.detail : Object.values(raw).flat().join(' ') || 'Erreur')
     } finally { setSaving(false) }
   }
 
-  const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0
+  async function doDelete() {
+    if (!del) return
+    await apiFetch(`/classes/${del.id}/`, { method: 'DELETE' }).catch(() => {})
+    setDel(null); load()
+  }
+
+  const sf = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <>
+      {STYLE}
+      <div className="pg-header">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Classes</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Groupes pédagogiques par niveau et spécialité</p>
+          <h1 className="pg-title">Classes</h1>
+          <p className="pg-sub">{filtered.length} classe{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <Button onClick={openAdd}><Plus size={15} /> Ajouter une classe</Button>
+        <button className="sc-add" onClick={openAdd}><Plus size={13} /> Nouvelle classe</button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex gap-2.5 flex-wrap">
-        <div className="relative flex-1 min-w-[220px] max-w-[340px]">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <Input className="pl-8" placeholder="Rechercher une classe…" value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }} />
+      <div className="sc-wrap">
+        <div className="sc-toolbar">
+          <div className="sc-search">
+            <Search size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+            <input placeholder="Rechercher une classe…" value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }} />
+          </div>
+          <select className="sc-sel" value={filterNiveau} onChange={e => { setFilterNiveau(e.target.value); setPage(1) }}>
+            <option value="">Tous les niveaux</option>
+            {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select className="sc-sel" value={filterSpec} onChange={e => { setFilterSpec(e.target.value); setPage(1) }}>
+            <option value="">Toutes les spécialités</option>
+            {specs.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
+          </select>
         </div>
-        <SelectNative className="w-auto" value={filterNiveau} onChange={e => { setFilterNiveau(e.target.value); setPage(1) }}>
-          <option value="">Tous les niveaux</option>
-          {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-        </SelectNative>
-        <SelectNative className="w-auto" value={filterSpec} onChange={e => { setFilterSpec(e.target.value); setPage(1) }}>
-          <option value="">Toutes les spécialités</option>
-          {specialites.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
-        </SelectNative>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table className="sc-table">
+            <thead>
+              <tr>
+                <th>Classe</th>
+                <th>Niveau</th>
+                <th>Spécialité</th>
+                <th>Effectif</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.length === 0 && (
+                <tr><td colSpan={5}><div className="sc-empty"><LayoutGrid size={28} style={{ margin: '0 auto 8px', opacity: 0.25 }} /><div>Aucune classe trouvée</div></div></td></tr>
+              )}
+              {paged.map(c => {
+                const nc = NIVEAU_COLORS[c.niveau] ?? { bg: '#f1f5f9', color: '#64748b' }
+                return (
+                  <tr key={c.id}>
+                    <td>
+                      <div className="sc-row">
+                        <div className="sc-avatar" style={{ background: avatarColor(c.id) }}>
+                          {c.libelle.slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="sc-primary">{c.libelle}</span>
+                      </div>
+                    </td>
+                    <td><span className="sc-badge" style={{ background: nc.bg, color: nc.color }}>{c.niveau}</span></td>
+                    <td style={{ color: '#64748b' }}>{c.specialite_libelle || '—'}</td>
+                    <td style={{ color: '#64748b' }}>{c.effectif > 0 ? `${c.effectif} étudiant${c.effectif > 1 ? 's' : ''}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                    <td>
+                      <div className="sc-actions">
+                        <button className="sc-btn" onClick={() => openEdit(c)} title="Modifier"><Pencil size={13} /></button>
+                        <button className="sc-btn del" onClick={() => setDel(c)} title="Supprimer"><Trash2 size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="sc-footer">
+          <span className="sc-count">
+            {filtered.length === 0 ? 'Aucun résultat'
+              : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} sur ${filtered.length}`}
+          </span>
+          <Pager total={filtered.length} page={page} onPage={setPage} />
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Classe</TableHead>
-              <TableHead>Niveau</TableHead>
-              <TableHead>Spécialité</TableHead>
-              <TableHead>Effectif</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-slate-400 py-10">Chargement…</TableCell></TableRow>
-            ) : data?.results.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-14 text-center">
-                  <LayoutGrid size={36} className="mx-auto mb-2 text-slate-200" />
-                  <p className="text-slate-400 text-sm">Aucune classe trouvée</p>
-                </TableCell>
-              </TableRow>
-            ) : data?.results.map(c => (
-              <TableRow key={c.id} className="cursor-pointer" onClick={() => openEdit(c)}>
-                <TableCell className="font-semibold text-slate-900">{c.libelle}</TableCell>
-                <TableCell><NiveauBadge niveau={c.niveau} /></TableCell>
-                <TableCell className="text-slate-500">{c.specialite_libelle}</TableCell>
-                <TableCell>
-                  {c.effectif > 0
-                    ? <span className="font-semibold text-slate-800">{c.effectif} <span className="text-slate-400 font-normal text-xs">étudiants</span></span>
-                    : <span className="text-slate-300">—</span>}
-                </TableCell>
-                <TableCell className="text-right">
-                  <span className="text-xs font-medium text-brand">Modifier →</span>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        {data && data.count > PAGE_SIZE && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-xs text-slate-500">{data.count} classe{data.count > 1 ? 's' : ''} · Page {page}/{totalPages}</span>
-            <div className="flex gap-1">
-              <button className={cn('p-1.5 rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors', page <= 1 && 'opacity-40 pointer-events-none')}
-                onClick={() => setPage(p => p - 1)}><ChevronLeft size={14} /></button>
-              <button className={cn('p-1.5 rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors', page >= totalPages && 'opacity-40 pointer-events-none')}
-                onClick={() => setPage(p => p + 1)}><ChevronRight size={14} /></button>
+      {open && (
+        <div className="mo" onClick={e => e.target === e.currentTarget && setOpen(false)}>
+          <div className="mo-box">
+            <div className="mo-head">
+              <span className="mo-title">{editing ? 'Modifier la classe' : 'Nouvelle classe'}</span>
+              <button className="mo-x" onClick={() => setOpen(false)}>✕</button>
+            </div>
+            <div className="mo-body">
+              {err && <div className="err-box">{err}</div>}
+              <div className="fl"><label>Libellé <span>*</span></label><input value={form.libelle} onChange={sf('libelle')} placeholder="Ex: L1 Informatique A" /></div>
+              <div className="fl-grid2">
+                <div className="fl"><label>Niveau <span>*</span></label>
+                  <select value={form.niveau} onChange={sf('niveau')}>
+                    {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div className="fl"><label>Effectif</label><input type="number" value={form.effectif} onChange={sf('effectif')} placeholder="0" min={0} /></div>
+              </div>
+              <div className="fl"><label>Spécialité <span>*</span></label>
+                <select value={form.specialite} onChange={sf('specialite')}>
+                  <option value="">— Choisir —</option>
+                  {specs.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="mo-foot">
+              <button className="btn-cancel" onClick={() => setOpen(false)}>Annuler</button>
+              <button className="btn-ok" onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier la classe' : 'Nouvelle classe'}</DialogTitle>
-            <DialogDescription>Renseignez les informations de la classe.</DialogDescription>
-          </DialogHeader>
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 mb-2">
-              {error}
+      {del && (
+        <div className="mo" onClick={e => e.target === e.currentTarget && setDel(null)}>
+          <div className="mo-box" style={{ maxWidth: 400 }}>
+            <div className="mo-head"><span className="mo-title">Supprimer la classe ?</span><button className="mo-x" onClick={() => setDel(null)}>✕</button></div>
+            <div className="mo-body">
+              <p style={{ fontSize: '.875rem', color: '#475569' }}>Supprimer <strong>{del.libelle}</strong> ? Les inscriptions liées seront également supprimées.</p>
             </div>
-          )}
-          <form onSubmit={handleSave} className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Libellé <span className="text-red-400">*</span></label>
-              <Input value={form.libelle} onChange={e => setForm({ ...form, libelle: e.target.value })} required placeholder="ex: Licence 1 Informatique" />
+            <div className="mo-foot">
+              <button className="btn-cancel" onClick={() => setDel(null)}>Annuler</button>
+              <button style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 9, padding: '.55rem 1.25rem', fontSize: '.875rem', fontWeight: 600, cursor: 'pointer' }} onClick={doDelete}>Supprimer</button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Niveau <span className="text-red-400">*</span></label>
-                <SelectNative value={form.niveau} onChange={e => setForm({ ...form, niveau: e.target.value })}>
-                  {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-                </SelectNative>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Effectif</label>
-                <Input type="number" min="0" value={form.effectif} onChange={e => setForm({ ...form, effectif: e.target.value })} placeholder="0" />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Spécialité <span className="text-red-400">*</span></label>
-              <SelectNative value={form.specialite} onChange={e => setForm({ ...form, specialite: e.target.value })} required>
-                <option value="">— Sélectionner —</option>
-                {specialites.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
-              </SelectNative>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>Annuler</Button>
-              <Button type="submit" size="sm" disabled={saving}>{saving ? 'Enregistrement…' : editTarget ? 'Mettre à jour' : 'Enregistrer'}</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

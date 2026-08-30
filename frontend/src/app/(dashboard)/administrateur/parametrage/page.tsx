@@ -34,7 +34,11 @@ export default function ParametragePage() {
   const [saving, setSaving]         = useState(false)
 
   useEffect(() => {
-    apiFetch<ApiList<Etablissement>>('/etablissements/?limit=100').then(d => {
+    // scope etabs to current user's university so annees/parcours stay in scope
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('dc_user') : null
+    const me = stored ? JSON.parse(stored) : null
+    const q = me?.university ? `?university=${me.university}&limit=100` : '?limit=100'
+    apiFetch<ApiList<Etablissement>>(`/etablissements/${q}`).then(d => {
       setEtabs(d.results)
       if (d.results[0]) setEtabSel(String(d.results[0].id))
     }).catch(() => {})
@@ -49,34 +53,44 @@ export default function ParametragePage() {
   }, [etabSel])
   useEffect(() => { loadAll() }, [loadAll])
 
+  function extractErr(e: unknown) {
+    const raw = e && typeof e === 'object' ? e as Record<string, unknown> : {}
+    return typeof raw.detail === 'string'
+      ? raw.detail
+      : Object.values(raw).flat().join(' ') || 'Erreur lors de la sauvegarde'
+  }
+
   async function saveAnnee() {
+    if (!anneeForm.libelle) { setErr('Libellé obligatoire'); return }
     setSaving(true); setErr(null)
     try {
       const body = { ...anneeForm, etablissement: Number(etabSel) }
       if (!editAnnee) await apiFetch('/annees/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/annees/${editAnnee.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setAnneeOpen(false); loadAll()
-    } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
+    } catch (e: unknown) { setErr(extractErr(e)) } finally { setSaving(false) }
   }
 
   async function saveParcours() {
+    if (!parcoursForm.libelle || !parcoursForm.code) { setErr('Code et libellé obligatoires'); return }
     setSaving(true); setErr(null)
     try {
       const body = { ...parcoursForm, etablissement: Number(etabSel) }
       if (!editParcours) await apiFetch('/parcours/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/parcours/${editParcours.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setParcoursOpen(false); loadAll()
-    } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
+    } catch (e: unknown) { setErr(extractErr(e)) } finally { setSaving(false) }
   }
 
   async function saveSpec() {
+    if (!specForm.libelle || !specForm.code) { setErr('Code et libellé obligatoires'); return }
     setSaving(true); setErr(null)
     try {
       const body = { ...specForm, parcours: specForm.parcours ? Number(specForm.parcours) : null, etablissement: Number(etabSel) }
       if (!editSpec) await apiFetch('/specialites/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/specialites/${editSpec.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setSpecOpen(false); loadAll()
-    } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
+    } catch (e: unknown) { setErr(extractErr(e)) } finally { setSaving(false) }
   }
 
   async function doDelete() {

@@ -74,7 +74,11 @@ class AnneeListView(generics.ListCreateAPIView):
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        return scoped_qs(self.request, AnneeAcademique.objects.all())
+        qs = scoped_qs(self.request, AnneeAcademique.objects.all())
+        etab = self.request.query_params.get('etablissement')
+        if etab:
+            qs = qs.filter(etablissement_id=etab)
+        return qs
 
 
 class AnneeDetailView(generics.RetrieveUpdateDestroyAPIView):

@@ -3,11 +3,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from accounts.permissions import AcademicReadPermission, EtudiantPermission, IsAdminOrScolarite, IsAdmin
 from .models import (
-    AnneeAcademique, Cycle, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
+    AnneeAcademique, Cycle, Parcours, Specialite, Classe, UE, ECUE, Etudiant, Inscription,
 )
 from .serializers import (
-    AnneeAcademiqueSerializer, CycleSerializer, SpecialiteSerializer, ClasseSerializer,
-    UESerializer, ECUESerializer, EtudiantSerializer, EtudiantListSerializer,
+    AnneeAcademiqueSerializer, CycleSerializer, ParcoursSerializer, SpecialiteSerializer,
+    ClasseSerializer, UESerializer, ECUESerializer, EtudiantSerializer, EtudiantListSerializer,
     InscriptionSerializer, InscriptionCreateSerializer,
 )
 from accounts.models import User, University, Etablissement
@@ -110,15 +110,38 @@ class CycleDetailView(generics.RetrieveUpdateDestroyAPIView):
         return scoped_qs(self.request, Cycle.objects.all())
 
 
+class ParcoursListView(generics.ListCreateAPIView):
+    serializer_class = ParcoursSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = scoped_qs(self.request, Parcours.objects.select_related('etablissement'))
+        etab = self.request.query_params.get('etablissement')
+        if etab:
+            qs = qs.filter(etablissement_id=etab)
+        return qs
+
+
+class ParcoursDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ParcoursSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return scoped_qs(self.request, Parcours.objects.select_related('etablissement'))
+
+
 class SpecialiteListView(generics.ListCreateAPIView):
     serializer_class = SpecialiteSerializer
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        qs = scoped_qs(self.request, Specialite.objects.select_related('cycle'))
-        cycle = self.request.query_params.get('cycle')
-        if cycle:
-            qs = qs.filter(cycle_id=cycle)
+        qs = scoped_qs(self.request, Specialite.objects.select_related('cycle', 'parcours'))
+        etab = self.request.query_params.get('etablissement')
+        parcours = self.request.query_params.get('parcours')
+        if etab:
+            qs = qs.filter(etablissement_id=etab)
+        if parcours:
+            qs = qs.filter(parcours_id=parcours)
         return qs
 
 
@@ -127,7 +150,7 @@ class SpecialiteDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        return scoped_qs(self.request, Specialite.objects.select_related('cycle'))
+        return scoped_qs(self.request, Specialite.objects.select_related('cycle', 'parcours'))
 
 
 class ClasseListView(generics.ListCreateAPIView):

@@ -1,105 +1,139 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
-import { Calendar, Clock, RefreshCw } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { RefreshCw, Activity } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { Input } from '@/components/ui/input'
-import { SelectNative } from '@/components/ui/select-native'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import type { LogEntry, ApiList } from '../_shared'
 import { ACTION_COLORS } from '../_shared'
+import { TABLE_STYLE, SearchInput, Pager } from '../_table'
+
+const PAGE_SIZE = 20
+
+const ACTIONS = [
+  { value: 'login',         label: 'Connexion' },
+  { value: 'logout',        label: 'Déconnexion' },
+  { value: 'create_user',   label: 'Création compte' },
+  { value: 'update_user',   label: 'Modif. compte' },
+  { value: 'delete_user',   label: 'Suppression compte' },
+  { value: 'create_insc',   label: 'Inscription' },
+  { value: 'reinscription', label: 'Réinscription' },
+  { value: 'create_classe', label: 'Classe créée' },
+  { value: 'create_ue',     label: 'UE créée' },
+  { value: 'system',        label: 'Système' },
+]
 
 export default function LogsPage() {
-  const [logs, setLogs]               = useState<LogEntry[]>([])
-  const [loading, setLoading]         = useState(true)
+  const [logs, setLogs]             = useState<LogEntry[]>([])
+  const [loading, setLoading]       = useState(true)
   const [filterAction, setFilterAction] = useState('')
-  const [filterUser, setFilterUser]   = useState('')
+  const [search, setSearch]         = useState('')
+  const [page, setPage]             = useState(1)
 
   const load = useCallback(() => {
     setLoading(true)
-    const p = new URLSearchParams()
+    const p = new URLSearchParams({ limit: '500' })
     if (filterAction) p.set('action', filterAction)
-    if (filterUser)   p.set('user', filterUser)
+    if (search) p.set('user', search)
     apiFetch<ApiList<LogEntry>>(`/logs/?${p}`).then(d => setLogs(d.results)).catch(() => {}).finally(() => setLoading(false))
-  }, [filterAction, filterUser])
+  }, [filterAction, search])
   useEffect(() => { load() }, [load])
 
+  const filtered = useMemo(() => logs, [logs])
+  const paged    = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  function fmtDate(s: string) {
+    const d = new Date(s)
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+      + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  function actionStyle(action: string) {
+    return ACTION_COLORS[action] || { bg: 'rgba(100,116,139,0.1)', color: '#64748b' }
+  }
+
+  function actionLabel(action: string) {
+    return ACTIONS.find(a => a.value === action)?.label || action
+  }
+
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-start justify-between mb-6">
+    <>
+      {TABLE_STYLE}
+      <style>{`
+        .pg-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem; }
+        .pg-title  { font-size:1.125rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; margin:0; }
+        .pg-sub    { font-size:0.75rem; color:#94a3b8; margin:.25rem 0 0; }
+        .spin      { animation: spin .7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+
+      <div className="pg-header">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Journal d'activité</h1>
-          <p className="text-sm text-slate-400 mt-0.5">{logs.length} entrée{logs.length > 1 ? 's' : ''} — actions et connexions</p>
+          <h1 className="pg-title">Journal d'activité</h1>
+          <p className="pg-sub">{loading ? 'Chargement…' : `${filtered.length} entrée${filtered.length !== 1 ? 's' : ''}`}</p>
         </div>
-        <button onClick={load} className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors">
-          <RefreshCw size={13} />
+        <button className="pt-add" onClick={load} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+          <RefreshCw size={13} className={loading ? 'spin' : ''} /> Actualiser
         </button>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-        <Input className="h-8 text-xs w-52" placeholder="Rechercher un login…" value={filterUser} onChange={e => setFilterUser(e.target.value)} />
-        <SelectNative className="h-8 text-xs w-auto" value={filterAction} onChange={e => setFilterAction(e.target.value)}>
-          <option value="">Toutes les actions</option>
-          <option value="login">Connexions</option>
-          <option value="logout">Déconnexions</option>
-          <option value="create_user">Création comptes</option>
-          <option value="update_user">Modification comptes</option>
-          <option value="delete_user">Suppression comptes</option>
-          <option value="create_insc">Inscriptions</option>
-          <option value="reinscription">Réinscriptions</option>
-          <option value="create_classe">Création classes</option>
-          <option value="create_ue">Création UE</option>
-        </SelectNative>
-      </div>
+      <div className="pt-wrap">
+        <div className="pt-toolbar">
+          <div className="pt-toolbar-left">
+            <SearchInput value={search} onChange={v => { setSearch(v); setPage(1) }} placeholder="Rechercher un utilisateur…" />
+            <select className="pt-sel" value={filterAction} onChange={e => { setFilterAction(e.target.value); setPage(1) }}>
+              <option value="">Toutes les actions</option>
+              {ACTIONS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+            </select>
+          </div>
+        </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date / Heure</TableHead>
-              <TableHead>Utilisateur</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Université</TableHead>
-              <TableHead>IP</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              Array(10).fill(0).map((_, i) => (
-                <TableRow key={i}>
-                  {Array(6).fill(0).map((_, j) => (
-                    <TableCell key={j}><div className="h-4 bg-slate-100 rounded animate-pulse" /></TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : logs.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-14">Aucun log trouvé.</TableCell></TableRow>
-            ) : logs.map(log => {
-              const ac = ACTION_COLORS[log.action] ?? { bg: 'rgba(100,116,139,0.1)', color: '#64748b' }
+        <table className="pt-table">
+          <thead>
+            <tr>
+              <th>Date & heure</th>
+              <th>Utilisateur</th>
+              <th>Action</th>
+              <th>Université</th>
+              <th>Description</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr><td colSpan={6}><div className="pt-empty" style={{ padding: '2.5rem' }}><RefreshCw size={22} className="spin" style={{ margin: '0 auto 8px', opacity: 0.4, display: 'block' }} /><div>Chargement…</div></div></td></tr>
+            )}
+            {!loading && paged.length === 0 && (
+              <tr><td colSpan={6}><div className="pt-empty"><Activity size={28} style={{ margin: '0 auto 8px', opacity: 0.3 }} /><div>Aucune activité trouvée</div></div></td></tr>
+            )}
+            {!loading && paged.map(log => {
+              const st = actionStyle(log.action)
               return (
-                <TableRow key={log.id}>
-                  <TableCell className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
-                    <div className="flex items-center gap-1.5"><Calendar size={11} className="text-slate-300" />{new Date(log.created_at).toLocaleDateString('fr-FR')}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5"><Clock size={11} className="text-slate-300" />{new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-semibold text-slate-900 text-sm">{log.user_nom || log.user_login || '—'}</div>
-                    {log.user_nom && log.user_login && <div className="text-xs text-slate-400">{log.user_login}</div>}
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap" style={{ background: ac.bg, color: ac.color }}>
-                      {log.action_label}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600 max-w-xs truncate">{log.description || '—'}</TableCell>
-                  <TableCell className="text-xs text-slate-400">{log.university_name ?? '—'}</TableCell>
-                  <TableCell className="font-mono text-xs text-slate-400">{log.ip ?? '—'}</TableCell>
-                </TableRow>
+                <tr key={log.id}>
+                  <td style={{ fontSize: '0.75rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDate(log.created_at)}</td>
+                  <td>
+                    <div className="pt-primary">{log.user_nom || log.user_login}</div>
+                    {log.user_nom && <div className="pt-secondary">{log.user_login}</div>}
+                  </td>
+                  <td>
+                    <span className="pt-badge" style={{ background: st.bg, color: st.color }}>{actionLabel(log.action)}</span>
+                  </td>
+                  <td style={{ fontSize: '0.8rem', color: '#64748b' }}>{log.university_name || <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                  <td style={{ fontSize: '0.8rem', color: '#475569', maxWidth: 280 }}>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.description || '—'}</div>
+                  </td>
+                  <td style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>{log.ip || '—'}</td>
+                </tr>
               )
             })}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
+
+        <div className="pt-footer">
+          <span className="pt-count">
+            {filtered.length === 0 ? 'Aucun résultat' : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} sur ${filtered.length}`}
+          </span>
+          <Pager total={filtered.length} page={page} pageSize={PAGE_SIZE} onPage={setPage} />
+        </div>
       </div>
-    </div>
+    </>
   )
 }

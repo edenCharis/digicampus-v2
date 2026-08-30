@@ -29,9 +29,23 @@ class Cycle(models.Model):
         return self.libelle
 
 
+class Parcours(models.Model):
+    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='parcours')
+    libelle = models.CharField(max_length=100)
+    code = models.CharField(max_length=20)
+
+    class Meta:
+        unique_together = ('etablissement', 'code')
+        ordering = ['libelle']
+
+    def __str__(self):
+        return self.libelle
+
+
 class Specialite(models.Model):
     etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='specialites')
     cycle = models.ForeignKey(Cycle, on_delete=models.SET_NULL, null=True, blank=True)
+    parcours = models.ForeignKey(Parcours, on_delete=models.SET_NULL, null=True, blank=True)
     libelle = models.CharField(max_length=200)
     code = models.CharField(max_length=20)
 

@@ -2,34 +2,36 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, CheckCircle2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { SelectNative } from '@/components/ui/select-native'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
-import type { Etablissement, Annee, Cycle, Specialite, ApiList } from '../_shared'
-import { ErrBox, ConfirmDialog, F } from '../_shared'
+import type { Etablissement, Annee, Parcours, Specialite, ApiList } from '../_shared'
+import {
+  TABLE_STYLE, Modal, ModalHead, ModalBody, ModalFoot,
+  FLabel, FInput, FSelect, BtnPrimary, BtnGhost, ErrBanner, ConfirmModal
+} from '../_table'
+
+type Section = 'annees' | 'parcours' | 'specialites'
 
 export default function ParametragePage() {
-  const [etabs, setEtabs]         = useState<Etablissement[]>([])
-  const [etabSel, setEtabSel]     = useState('')
-  const [annees, setAnnees]       = useState<Annee[]>([])
-  const [cycles, setCycles]       = useState<Cycle[]>([])
-  const [specs, setSpecs]         = useState<Specialite[]>([])
-  const [section, setSection]     = useState<'annees'|'cycles'|'specialites'>('annees')
-  const [anneeOpen, setAnneeOpen] = useState(false)
-  const [cycleOpen, setCycleOpen] = useState(false)
-  const [specOpen, setSpecOpen]   = useState(false)
-  const [editAnnee, setEditAnnee] = useState<Annee | null>(null)
-  const [editCycle, setEditCycle] = useState<Cycle | null>(null)
-  const [editSpec, setEditSpec]   = useState<Specialite | null>(null)
-  const [delTarget, setDelTarget] = useState<{ type: string; id: number; label: string } | null>(null)
-  const [anneeForm, setAnneeForm] = useState({ libelle: '', is_active: false })
-  const [cycleForm, setCycleForm] = useState({ code: '', libelle: '' })
-  const [specForm, setSpecForm]   = useState({ code: '', libelle: '', cycle: '' })
-  const [err, setErr]             = useState<string | null>(null)
-  const [saving, setSaving]       = useState(false)
+  const [etabs, setEtabs]           = useState<Etablissement[]>([])
+  const [etabSel, setEtabSel]       = useState('')
+  const [annees, setAnnees]         = useState<Annee[]>([])
+  const [parcours, setParcours]     = useState<Parcours[]>([])
+  const [specs, setSpecs]           = useState<Specialite[]>([])
+  const [section, setSection]       = useState<Section>('annees')
+
+  const [anneeOpen, setAnneeOpen]   = useState(false)
+  const [parcoursOpen, setParcoursOpen] = useState(false)
+  const [specOpen, setSpecOpen]     = useState(false)
+
+  const [editAnnee, setEditAnnee]   = useState<Annee | null>(null)
+  const [editParcours, setEditParcours] = useState<Parcours | null>(null)
+  const [editSpec, setEditSpec]     = useState<Specialite | null>(null)
+  const [delTarget, setDelTarget]   = useState<{ type: string; id: number; label: string } | null>(null)
+
+  const [anneeForm, setAnneeForm]   = useState({ libelle: '', is_active: false })
+  const [parcoursForm, setParcoursForm] = useState({ code: '', libelle: '' })
+  const [specForm, setSpecForm]     = useState({ code: '', libelle: '', parcours: '' })
+  const [err, setErr]               = useState<string | null>(null)
+  const [saving, setSaving]         = useState(false)
 
   useEffect(() => {
     apiFetch<ApiList<Etablissement>>('/etablissements/?limit=100').then(d => {
@@ -40,9 +42,10 @@ export default function ParametragePage() {
 
   const loadAll = useCallback(() => {
     if (!etabSel) return
-    apiFetch<ApiList<Annee>>('/annees/?limit=100').then(d => setAnnees(d.results.filter(a => a.etablissement === Number(etabSel)))).catch(() => {})
-    apiFetch<ApiList<Cycle>>('/cycles/?limit=100').then(d => setCycles(d.results.filter(c => c.etablissement === Number(etabSel)))).catch(() => {})
-    apiFetch<ApiList<Specialite>>('/specialites/?limit=100').then(d => setSpecs(d.results.filter(s => s.etablissement === Number(etabSel)))).catch(() => {})
+    const etabId = Number(etabSel)
+    apiFetch<ApiList<Annee>>(`/annees/?etablissement=${etabId}&limit=100`).then(d => setAnnees(d.results)).catch(() => {})
+    apiFetch<ApiList<Parcours>>(`/parcours/?etablissement=${etabId}&limit=100`).then(d => setParcours(d.results)).catch(() => {})
+    apiFetch<ApiList<Specialite>>(`/specialites/?etablissement=${etabId}&limit=100`).then(d => setSpecs(d.results)).catch(() => {})
   }, [etabSel])
   useEffect(() => { loadAll() }, [loadAll])
 
@@ -55,188 +58,227 @@ export default function ParametragePage() {
       setAnneeOpen(false); loadAll()
     } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
-  async function saveCycle() {
+
+  async function saveParcours() {
     setSaving(true); setErr(null)
     try {
-      const body = { ...cycleForm, etablissement: Number(etabSel) }
-      if (!editCycle) await apiFetch('/cycles/', { method: 'POST', body: JSON.stringify(body) })
-      else await apiFetch(`/cycles/${editCycle.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      setCycleOpen(false); loadAll()
+      const body = { ...parcoursForm, etablissement: Number(etabSel) }
+      if (!editParcours) await apiFetch('/parcours/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/parcours/${editParcours.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setParcoursOpen(false); loadAll()
     } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
+
   async function saveSpec() {
     setSaving(true); setErr(null)
     try {
-      const body = { ...specForm, cycle: specForm.cycle ? Number(specForm.cycle) : null, etablissement: Number(etabSel) }
+      const body = { ...specForm, parcours: specForm.parcours ? Number(specForm.parcours) : null, etablissement: Number(etabSel) }
       if (!editSpec) await apiFetch('/specialites/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/specialites/${editSpec.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setSpecOpen(false); loadAll()
     } catch (e: unknown) { setErr(JSON.stringify(e)) } finally { setSaving(false) }
   }
+
   async function doDelete() {
     if (!delTarget) return
-    const map: Record<string, string> = { annee: '/annees/', cycle: '/cycles/', specialite: '/specialites/' }
+    const map: Record<string, string> = { annee: '/annees/', parcours: '/parcours/', specialite: '/specialites/' }
     await apiFetch(`${map[delTarget.type]}${delTarget.id}/`, { method: 'DELETE' }).catch(() => {})
     setDelTarget(null); loadAll()
   }
 
-  const sections = [
-    { id: 'annees' as const,      label: 'Années académiques', count: annees.length },
-    { id: 'cycles' as const,      label: 'Cycles',             count: cycles.length },
-    { id: 'specialites' as const, label: 'Spécialités',        count: specs.length },
+  const sections: { id: Section; label: string; count: number }[] = [
+    { id: 'annees',      label: 'Années académiques', count: annees.length },
+    { id: 'parcours',    label: 'Parcours',            count: parcours.length },
+    { id: 'specialites', label: 'Spécialités',         count: specs.length },
   ]
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Paramétrage</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Années, cycles et spécialités par établissement</p>
-        </div>
-        <SelectNative className="h-8 text-xs w-auto max-w-56" value={etabSel} onChange={e => setEtabSel(e.target.value)}>
-          {etabs.map(e => <option key={e.id} value={e.id}>{e.code} — {e.libelle}</option>)}
-        </SelectNative>
-      </div>
+    <>
+      {TABLE_STYLE}
+      <style>{`
+        .pm-wrap  { max-width:700px; margin:0 auto; }
+        .pm-head  { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
+        .pm-title { font-size:1.125rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; margin:0; }
+        .pm-sub   { font-size:0.75rem; color:#94a3b8; margin:.25rem 0 0; }
+        .pm-tabs  { display:flex; gap:6px; margin-bottom:1.25rem; flex-wrap:wrap; }
+        .pm-tab   { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:9px; border:1.5px solid #e2e8f0; background:#fff; font-size:0.8rem; font-weight:600; color:#64748b; cursor:pointer; transition:all .15s; }
+        .pm-tab.on{ border-color:#1AAFE6; background:rgba(26,175,230,0.07); color:#1AAFE6; }
+        .pm-badge { font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:20px; background:#f1f5f9; color:#94a3b8; }
+        .pm-tab.on .pm-badge { background:rgba(26,175,230,0.15); color:#1AAFE6; }
+        .pm-card  { background:#fff; border:1px solid #e8edf3; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(15,23,42,0.04); }
+        .pm-bar   { display:flex; justify-content:flex-end; padding:.75rem 1rem; border-bottom:1px solid #f1f5f9; }
+        .pm-row   { display:flex; align-items:center; gap:.75rem; padding:.875rem 1.25rem; transition:background .1s; }
+        .pm-row:not(:last-child){ border-bottom:1px solid #f8fafc; }
+        .pm-row:hover { background:#fafbfd; }
+        .pm-row-actions { display:flex; gap:3px; opacity:0; transition:opacity .15s; }
+        .pm-row:hover .pm-row-actions { opacity:1; }
+        .pm-empty { padding:3rem 1rem; text-align:center; color:#94a3b8; font-size:.875rem; }
+        .pm-etab-sel { height:32px; padding:0 1.5rem 0 .625rem; border:1px solid #e2e8f0; border-radius:8px; font-size:.75rem; color:#475569; background:#f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 6px center; appearance:none; -webkit-appearance:none; outline:none; cursor:pointer; }
+        .active-pill { display:inline-flex; align-items:center; gap:4px; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:20px; background:rgba(16,185,129,.1); color:#10b981; }
+      `}</style>
 
-      <div className="flex gap-1.5 mb-5">
-        {sections.map(s => (
-          <button key={s.id} onClick={() => setSection(s.id)}
-            className={cn('flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all border', section === s.id ? 'bg-brand text-white border-brand shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300')}>
-            {s.label}
-            <span className={cn('text-[10px] font-bold rounded-full px-1.5', section === s.id ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500')}>{s.count}</span>
-          </button>
-        ))}
-      </div>
-
-      {section === 'annees' && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => { setEditAnnee(null); setAnneeForm({ libelle: '', is_active: false }); setErr(null); setAnneeOpen(true) }}>
-              <Plus size={14} /> Nouvelle année
-            </Button>
+      <div className="pm-wrap">
+        <div className="pm-head">
+          <div>
+            <h1 className="pm-title">Paramétrage</h1>
+            <p className="pm-sub">Années, parcours et spécialités par établissement</p>
           </div>
-          <Card>
+          <select className="pm-etab-sel" value={etabSel} onChange={e => setEtabSel(e.target.value)}>
+            {etabs.map(e => <option key={e.id} value={e.id}>{e.code} — {e.libelle}</option>)}
+          </select>
+        </div>
+
+        <div className="pm-tabs">
+          {sections.map(s => (
+            <button key={s.id} className={`pm-tab${section === s.id ? ' on' : ''}`} onClick={() => setSection(s.id)}>
+              {s.label}<span className="pm-badge">{s.count}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Années */}
+        {section === 'annees' && (
+          <div className="pm-card">
+            <div className="pm-bar">
+              <button className="pt-add" onClick={() => { setEditAnnee(null); setAnneeForm({ libelle: '', is_active: false }); setErr(null); setAnneeOpen(true) }}>
+                <Plus size={13} /> Nouvelle année
+              </button>
+            </div>
             {annees.length === 0
-              ? <div className="py-12 text-center text-slate-400 text-sm">Aucune année académique.</div>
-              : annees.map((a, i) => (
-                <div key={a.id} className={cn('flex items-center gap-3 px-4 py-3.5 group', i < annees.length - 1 && 'border-b border-slate-50')}>
-                  <div className="flex-1 flex items-center gap-3">
-                    <span className="font-bold text-slate-800">{a.libelle}</span>
-                    {a.is_active && <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full"><CheckCircle2 size={10} /> Active</span>}
+              ? <div className="pm-empty">Aucune année académique pour cet établissement.</div>
+              : annees.map(a => (
+                <div key={a.id} className="pm-row">
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>{a.libelle}</span>
+                    {a.is_active && <span className="active-pill"><CheckCircle2 size={10} /> Active</span>}
                   </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditAnnee(a); setAnneeForm({ libelle: a.libelle, is_active: a.is_active }); setErr(null); setAnneeOpen(true) }} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Pencil size={13} /></button>
-                    <button onClick={() => setDelTarget({ type: 'annee', id: a.id, label: a.libelle })} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500"><Trash2 size={13} /></button>
-                  </div>
-                </div>
-              ))}
-          </Card>
-        </div>
-      )}
-
-      {section === 'cycles' && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => { setEditCycle(null); setCycleForm({ code: '', libelle: '' }); setErr(null); setCycleOpen(true) }}>
-              <Plus size={14} /> Nouveau cycle
-            </Button>
-          </div>
-          <Card>
-            {cycles.length === 0
-              ? <div className="py-12 text-center text-slate-400 text-sm">Aucun cycle.</div>
-              : cycles.map((c, i) => (
-                <div key={c.id} className={cn('flex items-center gap-3 px-4 py-3.5 group', i < cycles.length - 1 && 'border-b border-slate-50')}>
-                  <div className="flex-1"><span className="font-semibold text-slate-800">{c.libelle}</span><span className="ml-2 text-xs text-slate-400">{c.code}</span></div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditCycle(c); setCycleForm({ code: c.code, libelle: c.libelle }); setErr(null); setCycleOpen(true) }} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><Pencil size={13} /></button>
-                    <button onClick={() => setDelTarget({ type: 'cycle', id: c.id, label: c.libelle })} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500"><Trash2 size={13} /></button>
+                  <div className="pm-row-actions">
+                    <button className="pt-ico-btn" onClick={() => { setEditAnnee(a); setAnneeForm({ libelle: a.libelle, is_active: a.is_active }); setErr(null); setAnneeOpen(true) }}><Pencil size={12} /></button>
+                    <button className="pt-ico-btn del" onClick={() => setDelTarget({ type: 'annee', id: a.id, label: a.libelle })}><Trash2 size={12} /></button>
                   </div>
                 </div>
-              ))}
-          </Card>
-        </div>
-      )}
-
-      {section === 'specialites' && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => { setEditSpec(null); setSpecForm({ code: '', libelle: '', cycle: cycles[0] ? String(cycles[0].id) : '' }); setErr(null); setSpecOpen(true) }}>
-              <Plus size={14} /> Nouvelle spécialité
-            </Button>
+              ))
+            }
           </div>
-          <Card>
+        )}
+
+        {/* Parcours */}
+        {section === 'parcours' && (
+          <div className="pm-card">
+            <div className="pm-bar">
+              <button className="pt-add" onClick={() => { setEditParcours(null); setParcoursForm({ code: '', libelle: '' }); setErr(null); setParcoursOpen(true) }}>
+                <Plus size={13} /> Nouveau parcours
+              </button>
+            </div>
+            {parcours.length === 0
+              ? <div className="pm-empty">Aucun parcours pour cet établissement.</div>
+              : parcours.map(p => (
+                <div key={p.id} className="pm-row">
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.875rem' }}>{p.libelle}</span>
+                    <span style={{ marginLeft: 8, fontSize: '0.75rem', color: '#94a3b8' }}>{p.code}</span>
+                  </div>
+                  <div className="pm-row-actions">
+                    <button className="pt-ico-btn" onClick={() => { setEditParcours(p); setParcoursForm({ code: p.code, libelle: p.libelle }); setErr(null); setParcoursOpen(true) }}><Pencil size={12} /></button>
+                    <button className="pt-ico-btn del" onClick={() => setDelTarget({ type: 'parcours', id: p.id, label: p.libelle })}><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {/* Spécialités */}
+        {section === 'specialites' && (
+          <div className="pm-card">
+            <div className="pm-bar">
+              <button className="pt-add" onClick={() => { setEditSpec(null); setSpecForm({ code: '', libelle: '', parcours: parcours[0] ? String(parcours[0].id) : '' }); setErr(null); setSpecOpen(true) }}>
+                <Plus size={13} /> Nouvelle spécialité
+              </button>
+            </div>
             {specs.length === 0
-              ? <div className="py-12 text-center text-slate-400 text-sm">Aucune spécialité.</div>
-              : specs.map((s, i) => (
-                <div key={s.id} className={cn('flex items-center gap-3 px-4 py-3.5 group', i < specs.length - 1 && 'border-b border-slate-50')}>
-                  <div className="flex-1">
-                    <div className="font-semibold text-slate-800 text-sm">{s.libelle}</div>
-                    <div className="text-xs text-slate-400">{s.code}{s.cycle_libelle ? ` · ${s.cycle_libelle}` : ''}</div>
+              ? <div className="pm-empty">Aucune spécialité pour cet établissement.</div>
+              : specs.map(s => (
+                <div key={s.id} className="pm-row">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.875rem' }}>{s.libelle}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 1 }}>
+                      {s.code}{s.parcours_libelle ? ` · ${s.parcours_libelle}` : ''}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditSpec(s); setSpecForm({ code: s.code, libelle: s.libelle, cycle: s.cycle ? String(s.cycle) : '' }); setErr(null); setSpecOpen(true) }} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><Pencil size={13} /></button>
-                    <button onClick={() => setDelTarget({ type: 'specialite', id: s.id, label: s.libelle })} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500"><Trash2 size={13} /></button>
+                  <div className="pm-row-actions">
+                    <button className="pt-ico-btn" onClick={() => { setEditSpec(s); setSpecForm({ code: s.code, libelle: s.libelle, parcours: s.parcours ? String(s.parcours) : '' }); setErr(null); setSpecOpen(true) }}><Pencil size={12} /></button>
+                    <button className="pt-ico-btn del" onClick={() => setDelTarget({ type: 'specialite', id: s.id, label: s.libelle })}><Trash2 size={12} /></button>
                   </div>
                 </div>
-              ))}
-          </Card>
-        </div>
+              ))
+            }
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {anneeOpen && (
+        <Modal onClose={() => setAnneeOpen(false)} width={380}>
+          <ModalHead title={editAnnee ? "Modifier l'année" : 'Nouvelle année académique'} onClose={() => setAnneeOpen(false)} />
+          <ModalBody>
+            {err && <ErrBanner msg={err} />}
+            <FLabel label="Libellé (ex: 2024-2025)" req>
+              <FInput value={anneeForm.libelle} onChange={e => setAnneeForm(f => ({ ...f, libelle: e.target.value }))} placeholder="2024-2025" />
+            </FLabel>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', color: '#475569' }}>
+              <input type="checkbox" checked={anneeForm.is_active} onChange={e => setAnneeForm(f => ({ ...f, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
+              Marquer comme année active
+            </label>
+          </ModalBody>
+          <ModalFoot>
+            <BtnGhost onClick={() => setAnneeOpen(false)}>Annuler</BtnGhost>
+            <BtnPrimary onClick={saveAnnee} disabled={saving}>{saving ? '…' : 'Enregistrer'}</BtnPrimary>
+          </ModalFoot>
+        </Modal>
       )}
 
-      {/* Dialogs */}
-      <Dialog open={anneeOpen} onOpenChange={setAnneeOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>{editAnnee ? "Modifier l'année" : 'Nouvelle année académique'}</DialogTitle></DialogHeader>
-          {err && <ErrBox msg={err} />}
-          <F label="Libellé (ex: 2024-2025)" req><Input value={anneeForm.libelle} onChange={e => setAnneeForm(f => ({ ...f, libelle: e.target.value }))} placeholder="2024-2025" /></F>
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer mt-3">
-            <input type="checkbox" className="rounded accent-emerald-500 w-4 h-4" checked={anneeForm.is_active} onChange={e => setAnneeForm(f => ({ ...f, is_active: e.target.checked }))} />
-            Marquer comme année active
-          </label>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" size="sm" onClick={() => setAnneeOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={saveAnnee} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {parcoursOpen && (
+        <Modal onClose={() => setParcoursOpen(false)} width={380}>
+          <ModalHead title={editParcours ? 'Modifier le parcours' : 'Nouveau parcours'} onClose={() => setParcoursOpen(false)} />
+          <ModalBody>
+            {err && <ErrBanner msg={err} />}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+              <FLabel label="Code" req><FInput value={parcoursForm.code} onChange={e => setParcoursForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="LIC" /></FLabel>
+              <FLabel label="Libellé" req><FInput value={parcoursForm.libelle} onChange={e => setParcoursForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Licence" /></FLabel>
+            </div>
+          </ModalBody>
+          <ModalFoot>
+            <BtnGhost onClick={() => setParcoursOpen(false)}>Annuler</BtnGhost>
+            <BtnPrimary onClick={saveParcours} disabled={saving}>{saving ? '…' : 'Enregistrer'}</BtnPrimary>
+          </ModalFoot>
+        </Modal>
+      )}
 
-      <Dialog open={cycleOpen} onOpenChange={setCycleOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>{editCycle ? 'Modifier' : 'Nouveau cycle'}</DialogTitle></DialogHeader>
-          {err && <ErrBox msg={err} />}
-          <div className="grid grid-cols-2 gap-3">
-            <F label="Code" req><Input value={cycleForm.code} onChange={e => setCycleForm(f => ({ ...f, code: e.target.value }))} placeholder="LIC" /></F>
-            <F label="Libellé" req><Input value={cycleForm.libelle} onChange={e => setCycleForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Licence" /></F>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" size="sm" onClick={() => setCycleOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={saveCycle} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {specOpen && (
+        <Modal onClose={() => setSpecOpen(false)} width={400}>
+          <ModalHead title={editSpec ? 'Modifier la spécialité' : 'Nouvelle spécialité'} onClose={() => setSpecOpen(false)} />
+          <ModalBody>
+            {err && <ErrBanner msg={err} />}
+            <FLabel label="Parcours">
+              <FSelect value={specForm.parcours} onChange={e => setSpecForm(f => ({ ...f, parcours: e.target.value }))}>
+                <option value="">— sans parcours —</option>
+                {parcours.map(p => <option key={p.id} value={p.id}>{p.libelle}</option>)}
+              </FSelect>
+            </FLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+              <FLabel label="Code" req><FInput value={specForm.code} onChange={e => setSpecForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="INFO" /></FLabel>
+              <FLabel label="Libellé" req><FInput value={specForm.libelle} onChange={e => setSpecForm(f => ({ ...f, libelle: e.target.value }))} /></FLabel>
+            </div>
+          </ModalBody>
+          <ModalFoot>
+            <BtnGhost onClick={() => setSpecOpen(false)}>Annuler</BtnGhost>
+            <BtnPrimary onClick={saveSpec} disabled={saving}>{saving ? '…' : 'Enregistrer'}</BtnPrimary>
+          </ModalFoot>
+        </Modal>
+      )}
 
-      <Dialog open={specOpen} onOpenChange={setSpecOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>{editSpec ? 'Modifier' : 'Nouvelle spécialité'}</DialogTitle></DialogHeader>
-          {err && <ErrBox msg={err} />}
-          <F label="Cycle">
-            <SelectNative value={specForm.cycle} onChange={e => setSpecForm(f => ({ ...f, cycle: e.target.value }))}>
-              <option value="">— sans cycle —</option>
-              {cycles.map(c => <option key={c.id} value={c.id}>{c.libelle}</option>)}
-            </SelectNative>
-          </F>
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <F label="Code" req><Input value={specForm.code} onChange={e => setSpecForm(f => ({ ...f, code: e.target.value }))} placeholder="INFO" /></F>
-            <F label="Libellé" req><Input value={specForm.libelle} onChange={e => setSpecForm(f => ({ ...f, libelle: e.target.value }))} /></F>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" size="sm" onClick={() => setSpecOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={saveSpec} disabled={saving}>{saving ? '…' : 'Enregistrer'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog open={!!delTarget} msg={`Supprimer "${delTarget?.label}" ?`} onYes={doDelete} onNo={() => setDelTarget(null)} />
-    </div>
+      {delTarget && <ConfirmModal name={delTarget.label} onYes={doDelete} onNo={() => setDelTarget(null)} />}
+    </>
   )
 }

@@ -118,7 +118,7 @@ export default function ECUEsPage() {
 
   function openAdd() {
     setEditing(null)
-    setForm({ ...emptyForm(), ue: filterUE || ues[0]?.id.toString() ?? '' })
+    setForm({ ...emptyForm(), ue: filterUE || (ues[0]?.id.toString() ?? '') })
     setErr(null); setOpen(true)
   }
   function openEdit(e: ECUE) {

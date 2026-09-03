@@ -7,7 +7,7 @@ import {
   UserCheck, Award, FileText, BarChart2, CreditCard, BookMarked,
   ShieldCheck, Briefcase, LogOut, X, ChevronRight, ChevronDown,
   Building2, Activity, Settings, Globe, RotateCcw,
-  Layers, GitFork, LayoutGrid,
+  Layers, GitFork, LayoutGrid, CalendarDays, Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROLE_NAV } from '@/lib/permissions'
@@ -49,12 +49,19 @@ const ALL_NAV_ITEMS: SidebarItem[] = [
   },
   // Other roles
   { label: 'Doyen',            href: '/doyen',        icon: <Briefcase size={17} /> },
-  { label: 'Enseignants',      href: '/enseignant',   icon: <Users size={17} /> },
-  { label: 'Professeurs',      href: '/professeur',   icon: <UserCheck size={17} /> },
-  { label: 'Cours',            href: '/cours',        icon: <BookOpen size={17} /> },
-  { label: 'Inscriptions',     href: '/inscription',  icon: <ClipboardList size={17} /> },
-  { label: 'Anonymat',         href: '/anonymat',     icon: <ShieldCheck size={17} /> },
-  { label: 'Personnel',        href: '/personnel',    icon: <Users size={17} /> },
+  { label: 'Tableau de bord',  href: '/enseignant',             icon: <BarChart2 size={17} />,    exact: true },
+  { label: 'ECUEs enseignées', href: '/enseignant/ecues',       icon: <Layers size={17} /> },
+  { label: 'Classes',          href: '/enseignant/classes',     icon: <LayoutGrid size={17} /> },
+  { label: 'Année académique', href: '/enseignant/annee',       icon: <CalendarDays size={17} /> },
+  { label: 'Professeurs',      href: '/professeur',             icon: <UserCheck size={17} /> },
+  { label: 'Cours',            href: '/cours',                  icon: <BookOpen size={17} /> },
+  { label: 'Inscriptions',     href: '/inscription',            icon: <ClipboardList size={17} /> },
+  { label: 'Anonymat',         href: '/anonymat',               icon: <ShieldCheck size={17} /> },
+  { label: 'Tableau de bord',  href: '/personnel',              icon: <BarChart2 size={17} />,    exact: true },
+  { label: 'Agents',           href: '/personnel/agents',       icon: <Users size={17} /> },
+  { label: 'Enseignants',      href: '/personnel/enseignants',  icon: <UserCheck size={17} /> },
+  { label: 'Congés',           href: '/personnel/conges',       icon: <CalendarDays size={17} /> },
+  { label: 'Départements',     href: '/personnel/departements', icon: <Building2 size={17} /> },
   { label: 'Gestion des Notes',href: '/gesnote',      icon: <Award size={17} /> },
   { label: 'Soutenance',       href: '/soutenance',   icon: <BookMarked size={17} /> },
   { label: 'Suivi',            href: '/suivi',        icon: <BarChart2 size={17} /> },
@@ -390,7 +397,9 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
                   </button>
                   <div className={cn('sb-children', isOpen && 'open')}>
                     {item.children.map(child => {
-                      const active = pathname === child.href || pathname.startsWith(child.href + '/')
+                      const active = child.exact
+                        ? pathname === child.href
+                        : pathname === child.href || pathname.startsWith(child.href + '/')
                       return (
                         <Link key={child.href} href={child.href}
                           className={cn('sb-sub-item', active && 'active')}>

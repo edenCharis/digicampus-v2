@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Plus, Pencil, Trash2, LayoutGrid, Search } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import { Plus, Pencil, Trash2, LayoutGrid, Search, ChevronDown } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 const PAGE_SIZE = 20
@@ -83,8 +83,61 @@ const STYLE = (
     .btn-ok:disabled { opacity:.6; cursor:not-allowed; }
     .btn-cancel { background:none; border:1px solid #e2e8f0; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:500; color:#64748b; cursor:pointer; }
     .btn-cancel:hover { background:#f8fafc; }
+    .ss-wrap { position:relative; }
+    .ss-trigger { border:1px solid #e2e8f0; border-radius:9px; padding:.55rem .75rem; font-size:.875rem; color:#334155; cursor:pointer; background:#fff; display:flex; justify-content:space-between; align-items:center; gap:.5rem; transition:border .15s; user-select:none; min-height:38px; width:100%; }
+    .ss-trigger:hover, .ss-trigger.open { border-color:#EF4444; }
+    .ss-trigger .ph { color:#94a3b8; }
+    .ss-dropdown { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:400; background:#fff; border:1px solid #e2e8f0; border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,0.1); overflow:hidden; }
+    .ss-search { padding:6px 8px; border-bottom:1px solid #f1f5f9; }
+    .ss-search input { width:100%; border:none; outline:none; font-size:.8125rem; color:#334155; background:none; }
+    .ss-search input::placeholder { color:#94a3b8; }
+    .ss-list { max-height:180px; overflow-y:auto; }
+    .ss-opt { padding:.5rem .75rem; font-size:.8125rem; cursor:pointer; color:#475569; }
+    .ss-opt:hover { background:#f8fafc; color:#0f172a; }
+    .ss-opt.sel { background:#FEF2F2; color:#EF4444; font-weight:600; }
+    .ss-opt.empty { color:#94a3b8; cursor:default; }
   `}</style>
 )
+
+interface Opt { value: string; label: string }
+function SearchSelect({ value, onChange, options, placeholder = '— choisir —' }: { value: string; onChange: (v: string) => void; options: Opt[]; placeholder?: string }) {
+  const [open, setOpen]   = useState(false)
+  const [q, setQ]         = useState('')
+  const ref               = useRef<HTMLDivElement>(null)
+  const inputRef          = useRef<HTMLInputElement>(null)
+  const filtered = q ? options.filter(o => o.label.toLowerCase().includes(q.toLowerCase())) : options
+  const selected = options.find(o => o.value === value)
+  useEffect(() => {
+    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+  useEffect(() => { if (open && inputRef.current) inputRef.current.focus() }, [open])
+  return (
+    <div ref={ref} className="ss-wrap">
+      <div className={`ss-trigger${open ? ' open' : ''}`} onClick={() => setOpen(v => !v)}>
+        <span className={selected ? '' : 'ph'}>{selected?.label ?? placeholder}</span>
+        <ChevronDown size={13} color="#94a3b8" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+      </div>
+      {open && (
+        <div className="ss-dropdown">
+          <div className="ss-search"><input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Rechercher…" /></div>
+          <div className="ss-list">
+            {filtered.length === 0
+              ? <div className="ss-opt empty">Aucun résultat</div>
+              : filtered.map(o => (
+                <div key={o.value} className={`ss-opt${o.value === value ? ' sel' : ''}`}
+                  onClick={() => { onChange(o.value); setOpen(false); setQ('') }}>
+                  {o.label}
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function Pager({ total, page, onPage }: { total: number; page: number; onPage: (p: number) => void }) {
   const pages = Math.ceil(total / PAGE_SIZE)
@@ -283,18 +336,14 @@ export default function ClassesPage() {
               <div className="fl"><label>Libellé <span>*</span></label><input value={form.libelle} onChange={sf('libelle')} placeholder="Ex: L1 Informatique A" /></div>
               <div className="fl-grid2">
                 <div className="fl"><label>Niveau <span>*</span></label>
-                  <select value={form.niveau} onChange={sf('niveau')}>
-                    <option value="">— Choisir —</option>
-                    {niveaux.map(n => <option key={n.id} value={n.code}>{n.code} — {n.libelle}</option>)}
-                  </select>
+                  <SearchSelect value={form.niveau} onChange={v => setForm(f => ({ ...f, niveau: v }))}
+                    options={niveaux.map(n => ({ value: n.code, label: `${n.code} — ${n.libelle}` }))} />
                 </div>
                 <div className="fl"><label>Effectif</label><input type="number" value={form.effectif} onChange={sf('effectif')} placeholder="0" min={0} /></div>
               </div>
               <div className="fl"><label>Spécialité <span>*</span></label>
-                <select value={form.specialite} onChange={sf('specialite')}>
-                  <option value="">— Choisir —</option>
-                  {specs.map(s => <option key={s.id} value={s.id}>{s.libelle}</option>)}
-                </select>
+                <SearchSelect value={form.specialite} onChange={v => setForm(f => ({ ...f, specialite: v }))}
+                  options={specs.map(s => ({ value: String(s.id), label: s.libelle }))} />
               </div>
             </div>
             <div className="mo-foot">

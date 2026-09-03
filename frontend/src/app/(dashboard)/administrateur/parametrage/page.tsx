@@ -1,14 +1,14 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, CheckCircle2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, GripVertical } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import type { Etablissement, Annee, Parcours, Specialite, ApiList } from '../_shared'
+import type { Etablissement, Annee, Parcours, Specialite, Semestre, Niveau, ApiList } from '../_shared'
 import {
   TABLE_STYLE, Modal, ModalHead, ModalBody, ModalFoot,
   FLabel, FInput, FSelect, BtnPrimary, BtnGhost, ErrBanner, ConfirmModal
 } from '../_table'
 
-type Section = 'annees' | 'parcours' | 'specialites'
+type Section = 'annees' | 'parcours' | 'specialites' | 'niveaux' | 'semestres'
 
 export default function ParametragePage() {
   const [etabs, setEtabs]           = useState<Etablissement[]>([])
@@ -16,25 +16,32 @@ export default function ParametragePage() {
   const [annees, setAnnees]         = useState<Annee[]>([])
   const [parcours, setParcours]     = useState<Parcours[]>([])
   const [specs, setSpecs]           = useState<Specialite[]>([])
+  const [niveaux, setNiveaux]       = useState<Niveau[]>([])
+  const [semestres, setSemestres]   = useState<Semestre[]>([])
   const [section, setSection]       = useState<Section>('annees')
 
-  const [anneeOpen, setAnneeOpen]   = useState(false)
+  const [anneeOpen, setAnneeOpen]     = useState(false)
   const [parcoursOpen, setParcoursOpen] = useState(false)
-  const [specOpen, setSpecOpen]     = useState(false)
+  const [specOpen, setSpecOpen]       = useState(false)
+  const [niveauOpen, setNiveauOpen]   = useState(false)
+  const [semestreOpen, setSemestreOpen] = useState(false)
 
-  const [editAnnee, setEditAnnee]   = useState<Annee | null>(null)
+  const [editAnnee, setEditAnnee]       = useState<Annee | null>(null)
   const [editParcours, setEditParcours] = useState<Parcours | null>(null)
-  const [editSpec, setEditSpec]     = useState<Specialite | null>(null)
-  const [delTarget, setDelTarget]   = useState<{ type: string; id: number; label: string } | null>(null)
+  const [editSpec, setEditSpec]         = useState<Specialite | null>(null)
+  const [editNiveau, setEditNiveau]     = useState<Niveau | null>(null)
+  const [editSemestre, setEditSemestre] = useState<Semestre | null>(null)
+  const [delTarget, setDelTarget]       = useState<{ type: string; id: number; label: string } | null>(null)
 
-  const [anneeForm, setAnneeForm]   = useState({ libelle: '', is_active: false })
+  const [anneeForm, setAnneeForm]     = useState({ libelle: '', is_active: false })
   const [parcoursForm, setParcoursForm] = useState({ code: '', libelle: '' })
-  const [specForm, setSpecForm]     = useState({ code: '', libelle: '', parcours: '' })
-  const [err, setErr]               = useState<string | null>(null)
-  const [saving, setSaving]         = useState(false)
+  const [specForm, setSpecForm]       = useState({ code: '', libelle: '', parcours: '' })
+  const [niveauForm, setNiveauForm]   = useState({ code: '', libelle: '', ordre: '1' })
+  const [semestreForm, setSemestreForm] = useState({ code: '', libelle: '', ordre: '1' })
+  const [err, setErr]                 = useState<string | null>(null)
+  const [saving, setSaving]           = useState(false)
 
   useEffect(() => {
-    // scope etabs to current user's university so annees/parcours stay in scope
     const stored = typeof window !== 'undefined' ? localStorage.getItem('dc_user') : null
     const me = stored ? JSON.parse(stored) : null
     const q = me?.university ? `?university=${me.university}&limit=100` : '?limit=100'
@@ -46,10 +53,12 @@ export default function ParametragePage() {
 
   const loadAll = useCallback(() => {
     if (!etabSel) return
-    const etabId = Number(etabSel)
-    apiFetch<ApiList<Annee>>(`/annees/?etablissement=${etabId}&limit=100`).then(d => setAnnees(d.results)).catch(() => {})
-    apiFetch<ApiList<Parcours>>(`/parcours/?etablissement=${etabId}&limit=100`).then(d => setParcours(d.results)).catch(() => {})
-    apiFetch<ApiList<Specialite>>(`/specialites/?etablissement=${etabId}&limit=100`).then(d => setSpecs(d.results)).catch(() => {})
+    const id = Number(etabSel)
+    apiFetch<ApiList<Annee>>(`/annees/?etablissement=${id}&limit=100`).then(d => setAnnees(d.results)).catch(() => {})
+    apiFetch<ApiList<Parcours>>(`/parcours/?etablissement=${id}&limit=100`).then(d => setParcours(d.results)).catch(() => {})
+    apiFetch<ApiList<Specialite>>(`/specialites/?etablissement=${id}&limit=100`).then(d => setSpecs(d.results)).catch(() => {})
+    apiFetch<ApiList<Niveau>>(`/niveaux/?etablissement=${id}&limit=100`).then(d => setNiveaux(d.results)).catch(() => {})
+    apiFetch<ApiList<Semestre>>(`/semestres/?etablissement=${id}&limit=100`).then(d => setSemestres(d.results)).catch(() => {})
   }, [etabSel])
   useEffect(() => { loadAll() }, [loadAll])
 
@@ -68,7 +77,7 @@ export default function ParametragePage() {
       if (!editAnnee) await apiFetch('/annees/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/annees/${editAnnee.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setAnneeOpen(false); loadAll()
-    } catch (e: unknown) { setErr(extractErr(e)) } finally { setSaving(false) }
+    } catch (e) { setErr(extractErr(e)) } finally { setSaving(false) }
   }
 
   async function saveParcours() {
@@ -79,7 +88,7 @@ export default function ParametragePage() {
       if (!editParcours) await apiFetch('/parcours/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/parcours/${editParcours.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setParcoursOpen(false); loadAll()
-    } catch (e: unknown) { setErr(extractErr(e)) } finally { setSaving(false) }
+    } catch (e) { setErr(extractErr(e)) } finally { setSaving(false) }
   }
 
   async function saveSpec() {
@@ -90,18 +99,45 @@ export default function ParametragePage() {
       if (!editSpec) await apiFetch('/specialites/', { method: 'POST', body: JSON.stringify(body) })
       else await apiFetch(`/specialites/${editSpec.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       setSpecOpen(false); loadAll()
-    } catch (e: unknown) { setErr(extractErr(e)) } finally { setSaving(false) }
+    } catch (e) { setErr(extractErr(e)) } finally { setSaving(false) }
+  }
+
+  async function saveNiveau() {
+    if (!niveauForm.code || !niveauForm.libelle) { setErr('Code et libellé obligatoires'); return }
+    setSaving(true); setErr(null)
+    try {
+      const body = { code: niveauForm.code.toUpperCase(), libelle: niveauForm.libelle, ordre: Number(niveauForm.ordre) || 1, etablissement: Number(etabSel) }
+      if (!editNiveau) await apiFetch('/niveaux/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/niveaux/${editNiveau.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setNiveauOpen(false); loadAll()
+    } catch (e) { setErr(extractErr(e)) } finally { setSaving(false) }
+  }
+
+  async function saveSemestre() {
+    if (!semestreForm.code || !semestreForm.libelle) { setErr('Code et libellé obligatoires'); return }
+    setSaving(true); setErr(null)
+    try {
+      const body = { code: semestreForm.code.toUpperCase(), libelle: semestreForm.libelle, ordre: Number(semestreForm.ordre) || 1, etablissement: Number(etabSel) }
+      if (!editSemestre) await apiFetch('/semestres/', { method: 'POST', body: JSON.stringify(body) })
+      else await apiFetch(`/semestres/${editSemestre.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      setSemestreOpen(false); loadAll()
+    } catch (e) { setErr(extractErr(e)) } finally { setSaving(false) }
   }
 
   async function doDelete() {
     if (!delTarget) return
-    const map: Record<string, string> = { annee: '/annees/', parcours: '/parcours/', specialite: '/specialites/' }
+    const map: Record<string, string> = {
+      annee: '/annees/', parcours: '/parcours/', specialite: '/specialites/',
+      niveau: '/niveaux/', semestre: '/semestres/',
+    }
     await apiFetch(`${map[delTarget.type]}${delTarget.id}/`, { method: 'DELETE' }).catch(() => {})
     setDelTarget(null); loadAll()
   }
 
   const sections: { id: Section; label: string; count: number }[] = [
     { id: 'annees',      label: 'Années académiques', count: annees.length },
+    { id: 'niveaux',     label: 'Niveaux',            count: niveaux.length },
+    { id: 'semestres',   label: 'Semestres',           count: semestres.length },
     { id: 'parcours',    label: 'Parcours',            count: parcours.length },
     { id: 'specialites', label: 'Spécialités',         count: specs.length },
   ]
@@ -110,12 +146,12 @@ export default function ParametragePage() {
     <>
       {TABLE_STYLE}
       <style>{`
-        .pm-wrap  { max-width:700px; margin:0 auto; }
+        .pm-wrap  { max-width:740px; margin:0 auto; }
         .pm-head  { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
         .pm-title { font-size:1.125rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; margin:0; }
         .pm-sub   { font-size:0.75rem; color:#94a3b8; margin:.25rem 0 0; }
         .pm-tabs  { display:flex; gap:6px; margin-bottom:1.25rem; flex-wrap:wrap; }
-        .pm-tab   { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:9px; border:1.5px solid #e2e8f0; background:#fff; font-size:0.8rem; font-weight:600; color:#64748b; cursor:pointer; transition:all .15s; }
+        .pm-tab   { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:9px; border:1.5px solid #e2e8f0; background:#fff; font-size:0.8rem; font-weight:600; color:#64748b; cursor:pointer; transition:all .15s; white-space:nowrap; }
         .pm-tab.on{ border-color:#EF4444; background:rgba(239,68,68,0.07); color:#EF4444; }
         .pm-badge { font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:20px; background:#f1f5f9; color:#94a3b8; }
         .pm-tab.on .pm-badge { background:rgba(239,68,68,0.15); color:#EF4444; }
@@ -129,13 +165,15 @@ export default function ParametragePage() {
         .pm-empty { padding:3rem 1rem; text-align:center; color:#94a3b8; font-size:.875rem; }
         .pm-etab-sel { height:32px; padding:0 1.5rem 0 .625rem; border:1px solid #e2e8f0; border-radius:8px; font-size:.75rem; color:#475569; background:#f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 6px center; appearance:none; -webkit-appearance:none; outline:none; cursor:pointer; }
         .active-pill { display:inline-flex; align-items:center; gap:4px; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:20px; background:rgba(16,185,129,.1); color:#10b981; }
+        .ordre-chip { display:inline-flex; align-items:center; gap:3px; font-size:.7rem; color:#94a3b8; padding:2px 7px; border-radius:20px; background:#f8fafc; border:1px solid #f1f5f9; }
+        .code-chip  { font-family:monospace; font-size:.8rem; font-weight:700; color:#EF4444; background:rgba(239,68,68,0.08); padding:2px 8px; border-radius:6px; }
       `}</style>
 
       <div className="pm-wrap">
         <div className="pm-head">
           <div>
             <h1 className="pm-title">Paramétrage</h1>
-            <p className="pm-sub">Années, parcours et spécialités par établissement</p>
+            <p className="pm-sub">Référentiel académique par établissement</p>
           </div>
           <select className="pm-etab-sel" value={etabSel} onChange={e => setEtabSel(e.target.value)}>
             {etabs.map(e => <option key={e.id} value={e.id}>{e.code} — {e.libelle}</option>)}
@@ -150,7 +188,7 @@ export default function ParametragePage() {
           ))}
         </div>
 
-        {/* Années */}
+        {/* ── Années ── */}
         {section === 'annees' && (
           <div className="pm-card">
             <div className="pm-bar">
@@ -176,7 +214,63 @@ export default function ParametragePage() {
           </div>
         )}
 
-        {/* Parcours */}
+        {/* ── Niveaux ── */}
+        {section === 'niveaux' && (
+          <div className="pm-card">
+            <div className="pm-bar">
+              <button className="pt-add" onClick={() => { setEditNiveau(null); setNiveauForm({ code: '', libelle: '', ordre: String(niveaux.length + 1) }); setErr(null); setNiveauOpen(true) }}>
+                <Plus size={13} /> Nouveau niveau
+              </button>
+            </div>
+            {niveaux.length === 0
+              ? <div className="pm-empty">Aucun niveau pour cet établissement.<br /><span style={{ fontSize: '.8rem' }}>Ex : L1 — Licence 1, M2 — Master 2</span></div>
+              : niveaux.map(n => (
+                <div key={n.id} className="pm-row">
+                  <GripVertical size={13} color="#d1d5db" style={{ flexShrink: 0 }} />
+                  <span className="code-chip">{n.code}</span>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.875rem' }}>{n.libelle}</span>
+                  </div>
+                  <span className="ordre-chip">ordre {n.ordre}</span>
+                  <div className="pm-row-actions">
+                    <button className="pt-ico-btn" onClick={() => { setEditNiveau(n); setNiveauForm({ code: n.code, libelle: n.libelle, ordre: String(n.ordre) }); setErr(null); setNiveauOpen(true) }}><Pencil size={12} /></button>
+                    <button className="pt-ico-btn del" onClick={() => setDelTarget({ type: 'niveau', id: n.id, label: `${n.code} — ${n.libelle}` })}><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {/* ── Semestres ── */}
+        {section === 'semestres' && (
+          <div className="pm-card">
+            <div className="pm-bar">
+              <button className="pt-add" onClick={() => { setEditSemestre(null); setSemestreForm({ code: '', libelle: '', ordre: String(semestres.length + 1) }); setErr(null); setSemestreOpen(true) }}>
+                <Plus size={13} /> Nouveau semestre
+              </button>
+            </div>
+            {semestres.length === 0
+              ? <div className="pm-empty">Aucun semestre pour cet établissement.<br /><span style={{ fontSize: '.8rem' }}>Ex : S1 — Semestre 1, S2 — Semestre 2</span></div>
+              : semestres.map(s => (
+                <div key={s.id} className="pm-row">
+                  <GripVertical size={13} color="#d1d5db" style={{ flexShrink: 0 }} />
+                  <span className="code-chip">{s.code}</span>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.875rem' }}>{s.libelle}</span>
+                  </div>
+                  <span className="ordre-chip">ordre {s.ordre}</span>
+                  <div className="pm-row-actions">
+                    <button className="pt-ico-btn" onClick={() => { setEditSemestre(s); setSemestreForm({ code: s.code, libelle: s.libelle, ordre: String(s.ordre) }); setErr(null); setSemestreOpen(true) }}><Pencil size={12} /></button>
+                    <button className="pt-ico-btn del" onClick={() => setDelTarget({ type: 'semestre', id: s.id, label: `${s.code} — ${s.libelle}` })}><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {/* ── Parcours ── */}
         {section === 'parcours' && (
           <div className="pm-card">
             <div className="pm-bar">
@@ -202,7 +296,7 @@ export default function ParametragePage() {
           </div>
         )}
 
-        {/* Spécialités */}
+        {/* ── Spécialités ── */}
         {section === 'specialites' && (
           <div className="pm-card">
             <div className="pm-bar">
@@ -231,7 +325,7 @@ export default function ParametragePage() {
         )}
       </div>
 
-      {/* Modals */}
+      {/* ── Modal Année ── */}
       {anneeOpen && (
         <Modal onClose={() => setAnneeOpen(false)} width={380}>
           <ModalHead title={editAnnee ? "Modifier l'année" : 'Nouvelle année académique'} onClose={() => setAnneeOpen(false)} />
@@ -241,7 +335,7 @@ export default function ParametragePage() {
               <FInput value={anneeForm.libelle} onChange={e => setAnneeForm(f => ({ ...f, libelle: e.target.value }))} placeholder="2024-2025" />
             </FLabel>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', color: '#475569' }}>
-              <input type="checkbox" checked={anneeForm.is_active} onChange={e => setAnneeForm(f => ({ ...f, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
+              <input type="checkbox" checked={anneeForm.is_active} onChange={e => setAnneeForm(f => ({ ...f, is_active: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#10b981' }} />
               Marquer comme année active
             </label>
           </ModalBody>
@@ -252,6 +346,63 @@ export default function ParametragePage() {
         </Modal>
       )}
 
+      {/* ── Modal Niveau ── */}
+      {niveauOpen && (
+        <Modal onClose={() => setNiveauOpen(false)} width={400}>
+          <ModalHead title={editNiveau ? 'Modifier le niveau' : 'Nouveau niveau'} onClose={() => setNiveauOpen(false)} />
+          <ModalBody>
+            {err && <ErrBanner msg={err} />}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 80px', gap: '0.875rem' }}>
+              <FLabel label="Code" req>
+                <FInput value={niveauForm.code} onChange={e => setNiveauForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="L1" />
+              </FLabel>
+              <FLabel label="Libellé" req>
+                <FInput value={niveauForm.libelle} onChange={e => setNiveauForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Licence 1" />
+              </FLabel>
+              <FLabel label="Ordre">
+                <FInput type="number" value={niveauForm.ordre} onChange={e => setNiveauForm(f => ({ ...f, ordre: e.target.value }))} min="1" />
+              </FLabel>
+            </div>
+            <p style={{ fontSize: '.75rem', color: '#94a3b8', margin: 0 }}>
+              Le code est utilisé dans les classes et UEs (ex : L1, M2). L&apos;ordre détermine l&apos;affichage dans les listes.
+            </p>
+          </ModalBody>
+          <ModalFoot>
+            <BtnGhost onClick={() => setNiveauOpen(false)}>Annuler</BtnGhost>
+            <BtnPrimary onClick={saveNiveau} disabled={saving}>{saving ? '…' : 'Enregistrer'}</BtnPrimary>
+          </ModalFoot>
+        </Modal>
+      )}
+
+      {/* ── Modal Semestre ── */}
+      {semestreOpen && (
+        <Modal onClose={() => setSemestreOpen(false)} width={400}>
+          <ModalHead title={editSemestre ? 'Modifier le semestre' : 'Nouveau semestre'} onClose={() => setSemestreOpen(false)} />
+          <ModalBody>
+            {err && <ErrBanner msg={err} />}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 80px', gap: '0.875rem' }}>
+              <FLabel label="Code" req>
+                <FInput value={semestreForm.code} onChange={e => setSemestreForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="S1" />
+              </FLabel>
+              <FLabel label="Libellé" req>
+                <FInput value={semestreForm.libelle} onChange={e => setSemestreForm(f => ({ ...f, libelle: e.target.value }))} placeholder="Semestre 1" />
+              </FLabel>
+              <FLabel label="Ordre">
+                <FInput type="number" value={semestreForm.ordre} onChange={e => setSemestreForm(f => ({ ...f, ordre: e.target.value }))} min="1" />
+              </FLabel>
+            </div>
+            <p style={{ fontSize: '.75rem', color: '#94a3b8', margin: 0 }}>
+              Le semestre est associé aux UEs et aux périodes d&apos;évaluation (ex : S1, S2, S3, S4).
+            </p>
+          </ModalBody>
+          <ModalFoot>
+            <BtnGhost onClick={() => setSemestreOpen(false)}>Annuler</BtnGhost>
+            <BtnPrimary onClick={saveSemestre} disabled={saving}>{saving ? '…' : 'Enregistrer'}</BtnPrimary>
+          </ModalFoot>
+        </Modal>
+      )}
+
+      {/* ── Modal Parcours ── */}
       {parcoursOpen && (
         <Modal onClose={() => setParcoursOpen(false)} width={380}>
           <ModalHead title={editParcours ? 'Modifier le parcours' : 'Nouveau parcours'} onClose={() => setParcoursOpen(false)} />
@@ -269,6 +420,7 @@ export default function ParametragePage() {
         </Modal>
       )}
 
+      {/* ── Modal Spécialité ── */}
       {specOpen && (
         <Modal onClose={() => setSpecOpen(false)} width={400}>
           <ModalHead title={editSpec ? 'Modifier la spécialité' : 'Nouvelle spécialité'} onClose={() => setSpecOpen(false)} />

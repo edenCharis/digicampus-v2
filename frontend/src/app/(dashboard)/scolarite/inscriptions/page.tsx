@@ -315,7 +315,7 @@ function NewInscModal({ open, classes, annees, specialites, etablissementId, onC
       if (form.annee_bac) payload.annee_bac = form.annee_bac
 
       const res = await apiFetch<{ etudiant: { code: string } }>('/inscriptions/create/', { method: 'POST', body: JSON.stringify(payload) })
-      setCreatedCode(res.etudiant.code); setDone(true)
+      setCreatedCode(res.etudiant.code); setDone(true); onSuccess()
     } catch (e: unknown) {
       setErr(extractApiError(e))
     } finally { setLoading(false) }

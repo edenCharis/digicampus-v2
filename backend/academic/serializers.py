@@ -200,7 +200,12 @@ class InscriptionCreateSerializer(serializers.Serializer):
         insc_data = {k: validated_data[k] for k in inscription_fields}
 
         with transaction.atomic():
-            etudiant = Etudiant.objects.create(**etudiant_fields, statut=Etudiant.Statut.INSCRIT)
+            # etablissement est requis sur Etudiant ET sur Inscription
+            etudiant = Etudiant.objects.create(
+                **etudiant_fields,
+                etablissement=insc_data['etablissement'],
+                statut=Etudiant.Statut.INSCRIT,
+            )
             inscription = Inscription.objects.create(
                 etudiant=etudiant,
                 **insc_data,

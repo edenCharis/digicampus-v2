@@ -201,6 +201,41 @@ function SearchSelect({ value, onChange, options, placeholder = '— sélectionn
   )
 }
 
+/* ── Error helpers ── */
+function extractApiError(e: unknown): string {
+  if (!e || typeof e !== 'object') return 'Erreur inconnue'
+  const raw = e as Record<string, unknown>
+  if (raw.detail) return String(raw.detail)
+  const parts = Object.entries(raw).map(([k, v]) => {
+    const msg = Array.isArray(v) ? v.flat().join(', ') : String(v)
+    return k === 'non_field_errors' ? msg : `${k} : ${msg}`
+  })
+  return parts.join('\n') || 'Erreur lors de l\'enregistrement'
+}
+
+function ErrAlert({ msg, onClose }: { msg: string; onClose: () => void }) {
+  return (
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 10,
+      background: '#fff1f2', border: '1px solid #fecaca', borderRadius: 10,
+      padding: '.75rem 1rem', display: 'flex', gap: '.625rem', alignItems: 'flex-start',
+      animation: 'errIn .2s ease',
+    }}>
+      <style>{`@keyframes errIn { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }`}</style>
+      <AlertCircle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 700, fontSize: '.8125rem', color: '#dc2626', marginBottom: 2 }}>Erreur d&apos;enregistrement</div>
+        {msg.split('\n').map((line, i) => (
+          <div key={i} style={{ fontSize: '.8rem', color: '#b91c1c', lineHeight: 1.5 }}>{line}</div>
+        ))}
+      </div>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', padding: 2, flexShrink: 0 }}>
+        <X size={14} />
+      </button>
+    </div>
+  )
+}
+
 /* ── Badges ── */
 function TypeBadge({ type }: { type: string }) {
   const m: Record<string, [string, string]> = { nouveau: ['rgba(239,68,68,0.12)', '#EF4444'], reinscrit: ['rgba(16,185,129,0.12)', '#10b981'], transfert: ['rgba(245,158,11,0.12)', '#f59e0b'] }
@@ -282,9 +317,7 @@ function NewInscModal({ open, classes, annees, specialites, etablissementId, onC
       const res = await apiFetch<{ etudiant: { code: string } }>('/inscriptions/create/', { method: 'POST', body: JSON.stringify(payload) })
       setCreatedCode(res.etudiant.code); setDone(true)
     } catch (e: unknown) {
-      const err = e as Record<string, unknown>
-      const msgs = Object.entries(err).map(([k, v]) => k === 'non_field_errors' ? String(v) : `${k}: ${v}`).join(' — ')
-      setErr(msgs || 'Erreur lors de l\'enregistrement')
+      setErr(extractApiError(e))
     } finally { setLoading(false) }
   }
 
@@ -299,6 +332,8 @@ function NewInscModal({ open, classes, annees, specialites, etablissementId, onC
           </div>
           <button className="mo-x" onClick={onClose}><X size={16} /></button>
         </div>
+
+        {err && <div style={{ padding: '0 1.5rem', paddingTop: '1rem' }}><ErrAlert msg={err} onClose={() => setErr(null)} /></div>}
 
         {done ? (
           <div className="mo-body" style={{ alignItems: 'center', textAlign: 'center', padding: '2.5rem 1.5rem' }}>
@@ -319,8 +354,6 @@ function NewInscModal({ open, classes, annees, specialites, etablissementId, onC
         ) : (
           <form onSubmit={submit}>
             <div className="mo-body">
-              {err && <div className="err"><AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />{err}</div>}
-
               {/* 1. Classe & Inscription */}
               <div className="sec-title">Classe & Inscription</div>
               <div className="g2">
@@ -449,8 +482,7 @@ function ReinscModal({ open, classes, annees, etablissementId, onClose, onSucces
       await apiFetch('/inscriptions/reinscription/', { method: 'POST', body: JSON.stringify({ etudiant: selected.id, classe: Number(classe), annee: Number(annee), statut_paiement: paye, montant_paye: montant ? Number(montant) : 0 }) })
       setDone(true); onSuccess()
     } catch (e: unknown) {
-      const err = e as Record<string, unknown>
-      setErr(String(err?.detail ?? JSON.stringify(err)))
+      setErr(extractApiError(e))
     } finally { setLoading(false) }
   }
 
@@ -466,6 +498,8 @@ function ReinscModal({ open, classes, annees, etablissementId, onClose, onSucces
           <button className="mo-x" onClick={onClose}><X size={16} /></button>
         </div>
 
+        {err && <div style={{ padding: '0 1.5rem', paddingTop: '1rem' }}><ErrAlert msg={err} onClose={() => setErr(null)} /></div>}
+
         {done ? (
           <div className="mo-body" style={{ alignItems: 'center', textAlign: 'center', padding: '2.5rem 1.5rem' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto .75rem' }}>
@@ -478,7 +512,6 @@ function ReinscModal({ open, classes, annees, etablissementId, onClose, onSucces
         ) : (
           <form onSubmit={submit}>
             <div className="mo-body">
-              {err && <div className="err"><AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />{err}</div>}
 
               <div className="sec-title">Rechercher l&apos;étudiant</div>
               <div style={{ display: 'flex', gap: '.5rem' }}>

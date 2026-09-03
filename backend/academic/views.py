@@ -153,7 +153,7 @@ class DashboardStatsView(APIView):
 
 class AnneeListView(generics.ListCreateAPIView):
     serializer_class = AnneeAcademiqueSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         qs = scoped_qs(self.request, AnneeAcademique.objects.all())
@@ -165,7 +165,7 @@ class AnneeListView(generics.ListCreateAPIView):
 
 class AnneeDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AnneeAcademiqueSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         return scoped_qs(self.request, AnneeAcademique.objects.all())

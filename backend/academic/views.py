@@ -202,7 +202,7 @@ class CycleDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class SemestreListView(generics.ListCreateAPIView):
     serializer_class = SemestreSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         qs = scoped_qs(self.request, Semestre.objects.all())
@@ -214,7 +214,7 @@ class SemestreListView(generics.ListCreateAPIView):
 
 class SemestreDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SemestreSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         return scoped_qs(self.request, Semestre.objects.all())
@@ -222,7 +222,7 @@ class SemestreDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class NiveauListView(generics.ListCreateAPIView):
     serializer_class = NiveauSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         qs = scoped_qs(self.request, Niveau.objects.all())
@@ -234,7 +234,7 @@ class NiveauListView(generics.ListCreateAPIView):
 
 class NiveauDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NiveauSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [AcademicReadPermission]
 
     def get_queryset(self):
         return scoped_qs(self.request, Niveau.objects.all())

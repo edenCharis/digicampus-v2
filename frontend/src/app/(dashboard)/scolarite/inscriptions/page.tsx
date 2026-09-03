@@ -749,15 +749,17 @@ export default function InscriptionsPage() {
 
   useEffect(() => {
     const raw = localStorage.getItem('dc_user')
-    if (raw) { const u = JSON.parse(raw); setEtab(u.etablissement ?? null) }
+    let etabId: number | null = null
+    if (raw) { const u = JSON.parse(raw); etabId = u.etablissement ?? null; setEtab(etabId) }
+    const etabQ = etabId ? `&etablissement=${etabId}` : ''
     apiFetch<ApiList<Classe>>('/classes/?limit=200').then(d => setClasses(d.results)).catch(() => {})
-    apiFetch<ApiList<Annee>>('/annees/?limit=50').then(d => {
+    apiFetch<ApiList<Annee>>(`/annees/?limit=50${etabQ}`).then(d => {
       setAnnees(d.results)
       const act = d.results.find(a => a.is_active)
       if (act) setFA(String(act.id))
     }).catch(() => {})
-    apiFetch<ApiList<Specialite>>('/specialites/?limit=200').then(d => setSpecs(d.results)).catch(() => {})
-    apiFetch<ApiList<Niveau>>('/niveaux/?limit=50').then(d => setNiveaux(d.results)).catch(() => {})
+    apiFetch<ApiList<Specialite>>(`/specialites/?limit=200${etabQ}`).then(d => setSpecs(d.results)).catch(() => {})
+    apiFetch<ApiList<Niveau>>(`/niveaux/?limit=50${etabQ}`).then(d => setNiveaux(d.results)).catch(() => {})
   }, [])
 
   const fetchInsc = useCallback(async (off: number) => {

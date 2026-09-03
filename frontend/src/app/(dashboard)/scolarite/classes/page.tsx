@@ -135,9 +135,11 @@ export default function ClassesPage() {
 
   useEffect(() => {
     load()
-    apiFetch<ApiList<Specialite>>('/specialites/?limit=200').then(d => setSpecs(d.results)).catch(() => {})
-    apiFetch<ApiList<Niveau>>('/niveaux/?limit=50').then(d => setNiveaux(d.results)).catch(() => {})
-  }, [load])
+    const etabId = me?.etablissement
+    const etabQ = etabId ? `&etablissement=${etabId}` : ''
+    apiFetch<ApiList<Specialite>>(`/specialites/?limit=200${etabQ}`).then(d => setSpecs(d.results)).catch(() => {})
+    apiFetch<ApiList<Niveau>>(`/niveaux/?limit=50${etabQ}`).then(d => setNiveaux(d.results)).catch(() => {})
+  }, [load, me?.etablissement])
 
   const filtered = useMemo(() => {
     let r = list

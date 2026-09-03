@@ -68,7 +68,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         COURS = 'cours', 'Cours'
         INSCRIPTION = 'inscription', 'Inscription'
         ANONYMAT = 'anonymat', 'Anonymat'
-        DAARHSPE = 'daarhspe', 'DAARHSPE'
+        PERSONNEL = 'personnel', 'Personnel'
         GESNOTE = 'gesnote', 'Gestion des Notes'
         SOUTENANCE = 'soutenance', 'Soutenance'
         SUIVI = 'suivi', 'Suivi'

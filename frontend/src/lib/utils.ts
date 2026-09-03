@@ -14,7 +14,7 @@ export const ROLE_LABELS: Record<string, string> = {
   cours: 'Cours',
   inscription: 'Inscription',
   anonymat: 'Anonymat',
-  daarhspe: 'DAARHSPE',
+  personnel: 'Personnel',
   gesnote: 'Gestion des Notes',
   soutenance: 'Soutenance',
   suivi: 'Suivi',

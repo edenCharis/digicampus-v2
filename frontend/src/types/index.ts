@@ -7,7 +7,7 @@ export type Role =
   | 'cours'
   | 'inscription'
   | 'anonymat'
-  | 'daarhspe'
+  | 'personnel'
   | 'gesnote'
   | 'soutenance'
   | 'suivi'

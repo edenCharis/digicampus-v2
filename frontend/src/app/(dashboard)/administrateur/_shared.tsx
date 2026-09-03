@@ -19,9 +19,9 @@ export interface AdminStats    { universities: number; etablissements: number; u
 export interface ApiList<T>    { count: number; results: T[] }
 
 /* ── Constants ── */
-export const ROLES = ['scolarité','doyen','enseignant','professeur','cours','inscription','anonymat','daarhspe','gesnote','soutenance','suivi','caisse','pvd']
+export const ROLES = ['scolarité','doyen','enseignant','professeur','cours','inscription','anonymat','personnel','gesnote','soutenance','suivi','caisse','pvd']
 
-export const ALL_MODULES = ['scolarite','inscription','notes','cours','anonymat','suivi','caisse','pvd','soutenance','daarhspe']
+export const ALL_MODULES = ['scolarite','inscription','notes','cours','anonymat','suivi','caisse','pvd','soutenance','personnel']
 
 export const ABONNEMENT_STATUTS = [
   { value: 'actif',    label: 'Actif',     color: '#10b981' },
@@ -32,7 +32,7 @@ export const ABONNEMENT_STATUTS = [
 
 export const ROLE_COLORS: Record<string, string> = {
   'scolarité':'#EF4444',doyen:'#8b5cf6',enseignant:'#f59e0b',professeur:'#10b981',
-  cours:'#06b6d4',inscription:'#3b82f6',anonymat:'#6366f1',daarhspe:'#ec4899',
+  cours:'#06b6d4',inscription:'#3b82f6',anonymat:'#6366f1',personnel:'#ec4899',
   gesnote:'#14b8a6',soutenance:'#f97316',suivi:'#84cc16',caisse:'#eab308',pvd:'#a78bfa',
 }
 

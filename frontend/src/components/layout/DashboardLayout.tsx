@@ -25,7 +25,7 @@ const MODULE_LABELS: Record<string, string> = {
   '/cours':          'Cours',
   '/inscription':    'Inscriptions',
   '/anonymat':       'Anonymat',
-  '/daarhspe':       'DAARHSPE',
+  '/personnel':      'Personnel',
   '/gesnote':        'Gestion des notes',
   '/soutenance':     'Soutenance',
   '/suivi':          'Suivi',

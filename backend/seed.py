@@ -44,7 +44,7 @@ ROLES = [
     ('cours',        'cours',        'Agent Cours',            User.Role.COURS,       False, False),
     ('inscription',  'inscription',  'Agent Inscription',      User.Role.INSCRIPTION, False, False),
     ('anonymat',     'anonymat',     'Agent Anonymat',         User.Role.ANONYMAT,    False, False),
-    ('daarhspe',     'daarhspe',     'Agent DAARHSPE',         User.Role.DAARHSPE,    False, False),
+    ('personnel',    'personnel',    'Agent Personnel',        User.Role.PERSONNEL,   False, False),
     ('gesnote',      'gesnote',      'Agent Gestion Notes',    User.Role.GESNOTE,     False, False),
     ('soutenance',   'soutenance',   'Agent Soutenance',       User.Role.SOUTENANCE,  False, False),
     ('suivi',        'suivi',        'Agent Suivi',            User.Role.SUIVI,       False, False),

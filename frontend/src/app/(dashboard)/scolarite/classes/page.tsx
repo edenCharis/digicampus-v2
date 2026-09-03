@@ -6,6 +6,7 @@ import { apiFetch } from '@/lib/api'
 const PAGE_SIZE = 20
 
 interface Specialite { id: number; libelle: string; code: string }
+interface Niveau    { id: number; code: string; libelle: string; ordre: number }
 interface Classe {
   id: number; libelle: string; niveau: string; effectif: number
   specialite: number; specialite_libelle: string; etablissement: number
@@ -22,8 +23,6 @@ const NIVEAU_COLORS: Record<string, { bg: string; color: string }> = {
   D2: { bg: 'rgba(217,119,6,0.1)',   color: '#d97706' },
   D3: { bg: 'rgba(180,83,9,0.1)',    color: '#b45309' },
 }
-
-const NIVEAUX = ['L1','L2','L3','M1','M2','D1','D2','D3']
 
 const STYLE = (
   <style>{`
@@ -114,6 +113,7 @@ function avatarColor(id: number) {
 export default function ClassesPage() {
   const [list, setList]             = useState<Classe[]>([])
   const [specs, setSpecs]           = useState<Specialite[]>([])
+  const [niveaux, setNiveaux]       = useState<Niveau[]>([])
   const [search, setSearch]         = useState('')
   const [filterNiveau, setFilterNiveau] = useState('')
   const [filterSpec, setFilterSpec] = useState('')
@@ -123,7 +123,7 @@ export default function ClassesPage() {
   const [del, setDel]               = useState<Classe | null>(null)
   const [err, setErr]               = useState<string | null>(null)
   const [saving, setSaving]         = useState(false)
-  const [form, setForm]             = useState({ libelle: '', niveau: 'L1', specialite: '', effectif: '' })
+  const [form, setForm]             = useState({ libelle: '', niveau: '', specialite: '', effectif: '' })
 
   const me = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('dc_user') || 'null') } catch { return null }
@@ -136,6 +136,7 @@ export default function ClassesPage() {
   useEffect(() => {
     load()
     apiFetch<ApiList<Specialite>>('/specialites/?limit=200').then(d => setSpecs(d.results)).catch(() => {})
+    apiFetch<ApiList<Niveau>>('/niveaux/?limit=50').then(d => setNiveaux(d.results)).catch(() => {})
   }, [load])
 
   const filtered = useMemo(() => {
@@ -151,7 +152,7 @@ export default function ClassesPage() {
 
   function openAdd() {
     setEditing(null)
-    setForm({ libelle: '', niveau: 'L1', specialite: '', effectif: '' })
+    setForm({ libelle: '', niveau: niveaux[0]?.code ?? '', specialite: '', effectif: '' })
     setErr(null); setOpen(true)
   }
   function openEdit(c: Classe) {
@@ -208,7 +209,7 @@ export default function ClassesPage() {
           </div>
           <select className="sc-sel" value={filterNiveau} onChange={e => { setFilterNiveau(e.target.value); setPage(1) }}>
             <option value="">Tous les niveaux</option>
-            {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+            {niveaux.map(n => <option key={n.id} value={n.code}>{n.code} — {n.libelle}</option>)}
           </select>
           <select className="sc-sel" value={filterSpec} onChange={e => { setFilterSpec(e.target.value); setPage(1) }}>
             <option value="">Toutes les spécialités</option>
@@ -281,7 +282,8 @@ export default function ClassesPage() {
               <div className="fl-grid2">
                 <div className="fl"><label>Niveau <span>*</span></label>
                   <select value={form.niveau} onChange={sf('niveau')}>
-                    {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                    <option value="">— Choisir —</option>
+                    {niveaux.map(n => <option key={n.id} value={n.code}>{n.code} — {n.libelle}</option>)}
                   </select>
                 </div>
                 <div className="fl"><label>Effectif</label><input type="number" value={form.effectif} onChange={sf('effectif')} placeholder="0" min={0} /></div>

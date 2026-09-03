@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 interface Specialite { id: number; libelle: string; code: string }
 interface Classe     { id: number; libelle: string; niveau: string; specialite: number; specialite_libelle: string }
 interface Annee      { id: number; libelle: string; is_active: boolean }
+interface Niveau     { id: number; code: string; libelle: string; ordre: number }
 interface Inscription {
   id: number; etudiant: number; etudiant_nom: string; etudiant_code: string; etudiant_sexe: string
   classe: number; classe_libelle: string; classe_niveau: string
@@ -27,7 +28,6 @@ const TYPES      = [{ value: 'nouveau', label: 'Nouveau' }, { value: 'reinscrit'
 const SERIES_BAC = ['A','C','D','E','F6','H','R1','R5','R6']
 const MENTIONS   = ['Passable','Assez-bien','Bien','Très-bien']
 const CYCLES     = ['Licence','Master','Doctorat']
-const NIVEAUX    = ['L1','L2','L3','M1','M2','D1','D2','D3']
 
 /* ── Inline styles ── */
 const ST = (
@@ -728,6 +728,7 @@ export default function InscriptionsPage() {
   const [classes, setClasses]       = useState<Classe[]>([])
   const [annees, setAnnees]         = useState<Annee[]>([])
   const [specialites, setSpecs]     = useState<Specialite[]>([])
+  const [niveaux, setNiveaux]       = useState<Niveau[]>([])
   const [count, setCount]           = useState(0)
   const [etudCount, setEtudCount]   = useState(0)
   const [offset, setOffset]         = useState(0)
@@ -756,6 +757,7 @@ export default function InscriptionsPage() {
       if (act) setFA(String(act.id))
     }).catch(() => {})
     apiFetch<ApiList<Specialite>>('/specialites/?limit=200').then(d => setSpecs(d.results)).catch(() => {})
+    apiFetch<ApiList<Niveau>>('/niveaux/?limit=50').then(d => setNiveaux(d.results)).catch(() => {})
   }, [])
 
   const fetchInsc = useCallback(async (off: number) => {
@@ -899,7 +901,7 @@ export default function InscriptionsPage() {
             </select>
             <select className="toolbar-sel" value={filterNiveau} onChange={e => setFN(e.target.value)}>
               <option value="">Tous niveaux</option>
-              {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+              {niveaux.map(n => <option key={n.id} value={n.code}>{n.code}</option>)}
             </select>
           </div>
 

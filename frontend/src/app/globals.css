@@ -2,8 +2,8 @@
 
 /* ── Digital Campus Design Tokens ── */
 @theme {
-  /* Brand: sky blue #1AAFE6, navy gradient #0E3358→#081A2E */
-  --color-brand:      #1AAFE6;
+  /* Brand: sky blue #EF4444, navy gradient #0E3358→#081A2E */
+  --color-brand:      #EF4444;
   --color-brand-dark: #1490c2;
   --color-brand-50:   #e8f7fd;
   --color-navy-900:   #081A2E;
@@ -22,12 +22,12 @@
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
-  --color-info: #1AAFE6;
+  --color-info: #EF4444;
 
   /* Sidebar specifics */
   --sidebar-bg: linear-gradient(180deg, #0E3358 0%, #081A2E 100%);
   --sidebar-text: #C8D8E8;
-  --sidebar-active: #1AAFE6;
+  --sidebar-active: #EF4444;
   --sidebar-sub-bg: #071628;
 
   /* Font */

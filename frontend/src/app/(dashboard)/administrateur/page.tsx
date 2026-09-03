@@ -41,7 +41,7 @@ export default function AdminDashboard() {
         }
         .kpi-card::before {
           content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-          background: var(--kpi-color, #1AAFE6);
+          background: var(--kpi-color, #EF4444);
           opacity: 0; transition: opacity 0.2s;
         }
         .kpi-card:hover::before { opacity: 1; }
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
       {/* KPIs */}
       <div className="adm-kpi">
         {[
-          { label: 'Universités',        value: stats?.universities,    icon: Building2,     color: '#1AAFE6', bg: 'rgba(26,175,230,0.08)',  trend: null,           sub: 'Partenaires actifs' },
+          { label: 'Universités',        value: stats?.universities,    icon: Building2,     color: '#EF4444', bg: 'rgba(239,68,68,0.08)',  trend: null,           sub: 'Partenaires actifs' },
           { label: 'Établissements',     value: stats?.etablissements,  icon: GraduationCap, color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', trend: null,           sub: 'Facultés & écoles' },
           { label: 'Comptes actifs',     value: stats?.users_total,     icon: Users,         color: '#10b981', bg: 'rgba(16,185,129,0.08)', trend: null,           sub: 'Utilisateurs total' },
           { label: 'Connexions du jour', value: stats?.connexions_today, icon: Wifi,         color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', trend: connexionTrend, sub: 'vs hier' },
@@ -161,9 +161,9 @@ export default function AdminDashboard() {
                   <div className="bar" style={{
                     height: h,
                     background: isToday
-                      ? 'linear-gradient(180deg, #1AAFE6 0%, rgba(26,175,230,0.6) 100%)'
+                      ? 'linear-gradient(180deg, #EF4444 0%, rgba(239,68,68,0.6) 100%)'
                       : '#f1f5f9',
-                    boxShadow: isToday ? '0 2px 8px rgba(26,175,230,0.25)' : 'none',
+                    boxShadow: isToday ? '0 2px 8px rgba(239,68,68,0.25)' : 'none',
                   }} />
                   <span className="bar-day">
                     {d.date ? new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short' }) : ''}

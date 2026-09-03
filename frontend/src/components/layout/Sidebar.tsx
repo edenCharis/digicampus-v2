@@ -136,42 +136,42 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
           @media (max-width: 1023px) {
             .sb-overlay {
               display: block; position: fixed; inset: 0;
-              background: rgba(0,0,0,0.55); z-index: 39;
+              background: rgba(0,0,0,0.3); z-index: 39;
               backdrop-filter: blur(2px);
             }
           }
 
           .sb {
             width: 256px; min-height: 100vh;
-            background: #080F1A;
+            background: #FFFFFF;
             display: flex; flex-direction: column;
             position: fixed; top: 0; left: 0; bottom: 0; z-index: 40;
             transition: width 0.22s cubic-bezier(.4,0,.2,1), transform 0.22s cubic-bezier(.4,0,.2,1);
-            border-right: 1px solid rgba(26,175,230,0.08);
+            border-right: 1px solid #F0F0F0;
             overflow: hidden;
           }
           .sb--collapsed { width: 72px; }
 
           @media (max-width: 1023px) {
             .sb { transform: translateX(-100%); width: 256px !important; }
-            .sb--open { transform: translateX(0); box-shadow: 24px 0 60px rgba(0,0,0,0.5); }
+            .sb--open { transform: translateX(0); box-shadow: 8px 0 32px rgba(0,0,0,0.1); }
           }
 
           /* ── Brand ── */
           .sb-brand {
             padding: 1.25rem 0.875rem 1.125rem;
             display: flex; align-items: center; gap: 0.75rem;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid #F3F4F6;
             min-height: 64px; overflow: hidden; flex-shrink: 0;
           }
           .sb--collapsed .sb-brand { justify-content: center; padding: 1.25rem 0; }
 
           .sb-monogram {
             width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-            background: linear-gradient(135deg, #0E3358 0%, #1AAFE6 100%);
+            background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.8rem; font-weight: 800; color: #fff;
-            letter-spacing: -0.02em; box-shadow: 0 2px 12px rgba(26,175,230,0.35);
+            letter-spacing: -0.02em; box-shadow: 0 2px 12px rgba(239,68,68,0.3);
           }
           .sb-wordmark {
             flex: 1; min-width: 0; overflow: hidden;
@@ -180,19 +180,19 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
           .sb--collapsed .sb-wordmark { opacity: 0; width: 0; pointer-events: none; }
 
           .sb-app-name {
-            color: #fff; font-weight: 700; font-size: 0.9rem; line-height: 1.2;
+            color: #111827; font-weight: 700; font-size: 0.9rem; line-height: 1.2;
             letter-spacing: -0.01em; white-space: nowrap;
           }
-          .sb-app-name span { color: #1AAFE6; }
+          .sb-app-name span { color: #EF4444; }
           .sb-etab {
-            font-size: 0.68rem; color: #3A5570; margin-top: 2px;
+            font-size: 0.68rem; color: #9CA3AF; margin-top: 2px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
           }
           .sb-close {
-            background: none; border: none; color: #4B6A85; cursor: pointer;
+            background: none; border: none; color: #9CA3AF; cursor: pointer;
             padding: 4px; border-radius: 6px; display: none; flex-shrink: 0;
           }
-          .sb-close:hover { color: #fff; background: rgba(255,255,255,0.06); }
+          .sb-close:hover { color: #374151; background: #F3F4F6; }
           @media (max-width: 1023px) { .sb-close { display: flex; } }
 
           /* ── Nav ── */
@@ -202,36 +202,35 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
             display: flex; flex-direction: column; gap: 2px;
           }
           .sb-nav::-webkit-scrollbar { width: 3px; }
-          .sb-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+          .sb-nav::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 2px; }
 
           /* Leaf nav items */
           .sb-item {
             display: flex; align-items: center; gap: 0.75rem;
             padding: 0.6rem 0.75rem; border-radius: 9px;
-            text-decoration: none; color: #4A6A85;
+            text-decoration: none; color: #6B7280;
             font-size: 0.875rem; font-weight: 500;
             transition: all 0.15s ease; position: relative;
             white-space: nowrap; overflow: hidden;
           }
           .sb--collapsed .sb-item { justify-content: center; padding: 0.6rem 0; }
-          .sb-item:hover { background: rgba(255,255,255,0.04); color: #C8D8E8; }
+          .sb-item:hover { background: #F9FAFB; color: #111827; }
 
           .sb-icon {
             width: 30px; height: 30px; border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; transition: all 0.15s; color: #4A6A85;
+            flex-shrink: 0; transition: all 0.15s; color: #9CA3AF;
           }
-          .sb-item:hover .sb-icon { color: #C8D8E8; }
+          .sb-item:hover .sb-icon { color: #374151; }
 
-          .sb-item.active { background: rgba(26,175,230,0.1); color: #E2EDF5; }
+          .sb-item.active { background: #FEF2F2; color: #DC2626; }
           .sb-item.active .sb-icon {
-            background: rgba(26,175,230,0.18); color: #1AAFE6;
-            box-shadow: 0 0 0 1px rgba(26,175,230,0.25);
+            background: rgba(239,68,68,0.12); color: #EF4444;
           }
           .sb-item.active::before {
             content: ''; position: absolute; left: 0; top: 25%; bottom: 25%;
             width: 3px; border-radius: 0 3px 3px 0;
-            background: #1AAFE6; box-shadow: 0 0 8px rgba(26,175,230,0.6);
+            background: #EF4444;
           }
           .sb-label {
             flex: 1; overflow: hidden; text-overflow: ellipsis;
@@ -248,9 +247,9 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
           .sb--collapsed .sb-item::after {
             content: attr(data-label);
             position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%);
-            background: #1A2840; color: #C8D8E8; font-size: 0.8rem; font-weight: 500;
+            background: #111827; color: #F9FAFB; font-size: 0.8rem; font-weight: 500;
             padding: 0.35rem 0.75rem; border-radius: 7px; white-space: nowrap;
-            border: 1px solid rgba(255,255,255,0.08); pointer-events: none;
+            border: 1px solid #374151; pointer-events: none;
             opacity: 0; transition: opacity 0.15s; z-index: 100;
           }
           .sb--collapsed .sb-item:hover::after { opacity: 1; }
@@ -259,34 +258,34 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
           .sb-group-btn {
             display: flex; align-items: center; gap: 0.75rem;
             padding: 0.6rem 0.75rem; border-radius: 9px;
-            color: #4A6A85; font-size: 0.875rem; font-weight: 500;
+            color: #6B7280; font-size: 0.875rem; font-weight: 500;
             cursor: pointer; background: none; border: none; width: 100%;
             transition: all 0.15s ease; position: relative;
             white-space: nowrap; overflow: hidden; text-align: left;
           }
           .sb--collapsed .sb-group-btn { justify-content: center; padding: 0.6rem 0; }
-          .sb-group-btn:hover { background: rgba(255,255,255,0.04); color: #C8D8E8; }
-          .sb-group-btn.group-open { color: #C8D8E8; }
-          .sb-group-btn.group-has-active { color: #E2EDF5; }
+          .sb-group-btn:hover { background: #F9FAFB; color: #111827; }
+          .sb-group-btn.group-open { color: #374151; }
+          .sb-group-btn.group-has-active { color: #DC2626; }
           .sb-group-btn.group-has-active .sb-icon {
-            background: rgba(26,175,230,0.12); color: #1AAFE6;
+            background: rgba(239,68,68,0.1); color: #EF4444;
           }
 
           .sb-group-chevron {
-            margin-left: auto; flex-shrink: 0; color: #3A5570;
+            margin-left: auto; flex-shrink: 0; color: #D1D5DB;
             transition: transform 0.2s, opacity 0.15s; opacity: 0;
           }
-          .sb-group-btn:hover .sb-group-chevron { opacity: 0.7; }
-          .sb-group-btn.group-open .sb-group-chevron { transform: rotate(180deg); opacity: 0.7; }
+          .sb-group-btn:hover .sb-group-chevron { opacity: 1; }
+          .sb-group-btn.group-open .sb-group-chevron { transform: rotate(180deg); opacity: 1; }
           .sb--collapsed .sb-group-chevron { display: none; }
 
           /* Tooltip for group when collapsed */
           .sb--collapsed .sb-group-btn::after {
             content: attr(data-label);
             position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%);
-            background: #1A2840; color: #C8D8E8; font-size: 0.8rem; font-weight: 500;
+            background: #111827; color: #F9FAFB; font-size: 0.8rem; font-weight: 500;
             padding: 0.35rem 0.75rem; border-radius: 7px; white-space: nowrap;
-            border: 1px solid rgba(255,255,255,0.08); pointer-events: none;
+            border: 1px solid #374151; pointer-events: none;
             opacity: 0; transition: opacity 0.15s; z-index: 100;
           }
           .sb--collapsed .sb-group-btn:hover::after { opacity: 1; }
@@ -303,16 +302,16 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
           .sb-sub-item {
             display: flex; align-items: center; gap: 0.625rem;
             padding: 0.45rem 0.75rem 0.45rem 2.5rem;
-            border-radius: 7px; text-decoration: none; color: #3A5570;
+            border-radius: 7px; text-decoration: none; color: #9CA3AF;
             font-size: 0.8125rem; font-weight: 500;
             transition: all 0.15s ease; position: relative;
             white-space: nowrap; overflow: hidden;
           }
-          .sb-sub-item:hover { background: rgba(255,255,255,0.04); color: #C8D8E8; }
-          .sb-sub-item.active { color: #1AAFE6; background: rgba(26,175,230,0.08); }
+          .sb-sub-item:hover { background: #F9FAFB; color: #374151; }
+          .sb-sub-item.active { color: #EF4444; background: #FEF2F2; }
           .sb-sub-item.active::before {
             content: ''; position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);
-            width: 4px; height: 4px; border-radius: 50%; background: #1AAFE6;
+            width: 4px; height: 4px; border-radius: 50%; background: #EF4444;
           }
           .sb-sub-icon { flex-shrink: 0; opacity: 0.6; }
           .sb-sub-item:hover .sb-sub-icon,
@@ -320,27 +319,27 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
 
           /* separator */
           .sb-sep {
-            height: 1px; background: rgba(255,255,255,0.04);
+            height: 1px; background: #F3F4F6;
             margin: 6px 0.5rem;
           }
 
           /* ── User card ── */
           .sb-user {
             padding: 0.75rem 0.625rem;
-            border-top: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid #F3F4F6;
             flex-shrink: 0;
           }
           .sb-user-card {
             display: flex; align-items: center; gap: 0.625rem;
             padding: 0.5rem 0.625rem; border-radius: 9px;
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            background: #F9FAFB; border: 1px solid #F3F4F6;
             overflow: hidden;
           }
           .sb--collapsed .sb-user-card { justify-content: center; padding: 0.5rem 0; border: none; background: none; }
 
           .sb-avatar {
             width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-            background: linear-gradient(135deg, #0E3358, #1AAFE6);
+            background: linear-gradient(135deg, #DC2626, #EF4444);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.72rem; font-weight: 700; color: #fff;
             overflow: hidden;
@@ -352,19 +351,19 @@ export default function Sidebar({ role, nom, photo, etablissement, onLogout, ope
           .sb--collapsed .sb-user-info { opacity: 0; width: 0; pointer-events: none; }
 
           .sb-user-name {
-            color: #C8D8E8; font-size: 0.8rem; font-weight: 600;
+            color: #111827; font-size: 0.8rem; font-weight: 600;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
           .sb-user-role {
-            font-size: 0.65rem; font-weight: 600; color: #1AAFE6;
+            font-size: 0.65rem; font-weight: 600; color: #EF4444;
             text-transform: uppercase; letter-spacing: 0.06em; margin-top: 1px;
           }
           .sb-logout {
             background: none; border: none; cursor: pointer; padding: 5px;
-            color: #4B6A85; border-radius: 7px; display: flex; align-items: center;
+            color: #9CA3AF; border-radius: 7px; display: flex; align-items: center;
             transition: all 0.15s; flex-shrink: 0;
           }
-          .sb-logout:hover { background: rgba(239,68,68,0.12); color: #fca5a5; }
+          .sb-logout:hover { background: #FEF2F2; color: #EF4444; }
           .sb--collapsed .sb-logout { display: none; }
         `}</style>
 

@@ -123,10 +123,10 @@ export default function ComptePage() {
         }
         .cp-avatar {
           width: 72px; height: 72px; border-radius: 50%;
-          background: linear-gradient(135deg, #0E3358 0%, #1AAFE6 100%);
+          background: linear-gradient(135deg, #0E3358 0%, #EF4444 100%);
           display: flex; align-items: center; justify-content: center;
           font-size: 1.5rem; font-weight: 800; color: #fff;
-          box-shadow: 0 4px 16px rgba(26,175,230,0.3);
+          box-shadow: 0 4px 16px rgba(239,68,68,0.3);
           overflow: hidden; object-fit: cover;
         }
         .cp-avatar-overlay {
@@ -142,7 +142,7 @@ export default function ComptePage() {
         .cp-role-pill {
           display: inline-flex; align-items: center;
           font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
-          background: rgba(26,175,230,0.08); color: #1AAFE6;
+          background: rgba(239,68,68,0.08); color: #EF4444;
           border-radius: 20px; padding: 0.2rem 0.7rem; margin-top: 6px;
           text-transform: uppercase;
         }
@@ -190,7 +190,7 @@ export default function ComptePage() {
           font-size: 0.875rem; color: #1e293b; background: #fff;
           outline: none; transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .cp-input:focus { border-color: #1AAFE6; box-shadow: 0 0 0 3px rgba(26,175,230,0.1); }
+        .cp-input:focus { border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
         .cp-input-wrap { position: relative; }
         .cp-input-wrap .cp-input { padding-right: 2.5rem; }
         .cp-eye {
@@ -205,7 +205,7 @@ export default function ComptePage() {
           height: 36px; padding: 0 1rem; border-radius: 9px; font-size: 0.8125rem; font-weight: 600;
           cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px;
         }
-        .cp-btn-primary { background: #1AAFE6; color: #fff; }
+        .cp-btn-primary { background: #EF4444; color: #fff; }
         .cp-btn-primary:hover { background: #1490c2; }
         .cp-btn-primary:disabled { opacity: 0.6; cursor: default; }
         .cp-btn-ghost { background: #f8fafc; color: #475569; border: 1px solid #f1f5f9; }
@@ -265,7 +265,7 @@ export default function ComptePage() {
         {/* Fields */}
         <div className="cp-fields">
           {[
-            { icon: User,  bg: 'rgba(26,175,230,0.08)',  color: '#1AAFE6', label: 'Nom complet',     val: me?.nom || '—' },
+            { icon: User,  bg: 'rgba(239,68,68,0.08)',  color: '#EF4444', label: 'Nom complet',     val: me?.nom || '—' },
             { icon: Mail,  bg: 'rgba(16,185,129,0.08)',  color: '#10b981', label: 'Email',            val: me?.email || '—' },
             { icon: Lock,  bg: 'rgba(139,92,246,0.08)',  color: '#8b5cf6', label: 'Login',            val: me?.login || '—' },
           ].map(f => {

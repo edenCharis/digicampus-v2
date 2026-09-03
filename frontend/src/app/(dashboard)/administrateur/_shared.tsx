@@ -31,13 +31,13 @@ export const ABONNEMENT_STATUTS = [
 ]
 
 export const ROLE_COLORS: Record<string, string> = {
-  'scolarité':'#1AAFE6',doyen:'#8b5cf6',enseignant:'#f59e0b',professeur:'#10b981',
+  'scolarité':'#EF4444',doyen:'#8b5cf6',enseignant:'#f59e0b',professeur:'#10b981',
   cours:'#06b6d4',inscription:'#3b82f6',anonymat:'#6366f1',daarhspe:'#ec4899',
   gesnote:'#14b8a6',soutenance:'#f97316',suivi:'#84cc16',caisse:'#eab308',pvd:'#a78bfa',
 }
 
 export const ACTION_COLORS: Record<string, { bg: string; color: string }> = {
-  login:         { bg: 'rgba(26,175,230,0.1)',  color: '#1AAFE6' },
+  login:         { bg: 'rgba(239,68,68,0.1)',  color: '#EF4444' },
   logout:        { bg: 'rgba(100,116,139,0.1)', color: '#64748b' },
   create_user:   { bg: 'rgba(16,185,129,0.1)',  color: '#10b981' },
   update_user:   { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },

@@ -9,7 +9,7 @@ import {
 } from '../_table'
 
 const PAGE_SIZE = 15
-const COLORS = ['#1AAFE6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
+const COLORS = ['#EF4444','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
 
 function getMe() {
   try { return JSON.parse(localStorage.getItem('dc_user') || 'null') } catch { return null }

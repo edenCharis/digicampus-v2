@@ -23,8 +23,8 @@ const STYLE = (
     .db-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.75rem; flex-wrap:wrap; gap:.75rem; }
     .db-title { font-size:1.375rem; font-weight:800; color:#0f172a; letter-spacing:-.03em; margin:0; }
     .db-sub { font-size:.8125rem; color:#94a3b8; margin:.25rem 0 0; }
-    .db-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(26,175,230,0.1); color:#1AAFE6; border:1px solid rgba(26,175,230,0.2); border-radius:99px; padding:.35rem .875rem; font-size:.75rem; font-weight:700; white-space:nowrap; }
-    .db-badge-dot { width:7px; height:7px; border-radius:50%; background:#1AAFE6; }
+    .db-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(239,68,68,0.1); color:#EF4444; border:1px solid rgba(239,68,68,0.2); border-radius:99px; padding:.35rem .875rem; font-size:.75rem; font-weight:700; white-space:nowrap; }
+    .db-badge-dot { width:7px; height:7px; border-radius:50%; background:#EF4444; }
 
     /* KPI row */
     .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.25rem; }
@@ -33,7 +33,7 @@ const STYLE = (
 
     .kpi { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1.25rem 1.25rem 1rem; position:relative; overflow:hidden; }
     .kpi::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:99px 99px 0 0; }
-    .kpi.blue::after { background:#1AAFE6; }
+    .kpi.blue::after { background:#EF4444; }
     .kpi.violet::after { background:#8b5cf6; }
     .kpi.green::after { background:#10b981; }
     .kpi.amber::after { background:#f59e0b; }
@@ -63,7 +63,7 @@ const STYLE = (
     /* Suivi mensuel */
     .suivi-tabs { display:flex; gap:.375rem; margin-bottom:1rem; }
     .suivi-tab { flex:1; padding:.375rem .5rem; border:1px solid #e2e8f0; border-radius:7px; font-size:.72rem; font-weight:600; cursor:pointer; background:#f8fafc; color:#64748b; text-align:center; transition:all .15s; }
-    .suivi-tab.active { background:#1AAFE6; color:#fff; border-color:#1AAFE6; }
+    .suivi-tab.active { background:#EF4444; color:#fff; border-color:#EF4444; }
     .suivi-stat { display:flex; align-items:center; gap:.625rem; padding:.5rem 0; border-bottom:1px solid #f1f5f9; }
     .suivi-stat:last-child { border-bottom:none; }
     .suivi-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
@@ -199,7 +199,7 @@ export default function ScolariteDashboard() {
         {/* KPI cards */}
         <div className="kpi-row">
           {[
-            { label: 'Inscriptions', sub: s?.annee_active ?? 'Aucune année active', val: fmt(s?.inscriptions, loading), color: 'blue', icon: <ClipboardList size={18} color="#1AAFE6" />, iconBg: 'rgba(26,175,230,0.1)' },
+            { label: 'Inscriptions', sub: s?.annee_active ?? 'Aucune année active', val: fmt(s?.inscriptions, loading), color: 'blue', icon: <ClipboardList size={18} color="#EF4444" />, iconBg: 'rgba(239,68,68,0.1)' },
             { label: 'Étudiants', sub: `${fmt(s?.etudiants_inscrit, loading)} inscrits actifs`, val: fmt(s?.etudiants, loading), color: 'violet', icon: <Users size={18} color="#8b5cf6" />, iconBg: 'rgba(139,92,246,0.1)' },
             { label: 'Classes', sub: 'Groupes pédagogiques', val: fmt(s?.classes, loading), color: 'green', icon: <LayoutGrid size={18} color="#10b981" />, iconBg: 'rgba(16,185,129,0.1)' },
             { label: 'Enseignants', sub: 'Actifs cet établissement', val: fmt(s?.enseignants, loading), color: 'amber', icon: <UserCheck size={18} color="#f59e0b" />, iconBg: 'rgba(245,158,11,0.1)' },
@@ -225,7 +225,7 @@ export default function ScolariteDashboard() {
             <DonutRing data={[
               { label: 'Inscrits',  value: s?.etudiants_inscrit  ?? 0, color: '#10b981' },
               { label: 'En cours', value: s?.etudiants_en_cours  ?? 0, color: '#f59e0b' },
-              { label: 'Admis',    value: s?.etudiants_admis     ?? 0, color: '#1AAFE6' },
+              { label: 'Admis',    value: s?.etudiants_admis     ?? 0, color: '#EF4444' },
               { label: 'Refusés',  value: s?.etudiants_refuse    ?? 0, color: '#ef4444' },
             ]} />
           </div>
@@ -233,7 +233,7 @@ export default function ScolariteDashboard() {
           {/* Types d'inscriptions */}
           <div className="card">
             <div className="card-title">Types d&apos;inscriptions</div>
-            <BarChart color="#1AAFE6" items={[
+            <BarChart color="#EF4444" items={[
               { label: 'Nouveaux',     value: s?.inscriptions_nouveau   ?? 0 },
               { label: 'Réinscrits',   value: s?.inscriptions_reinscrit ?? 0 },
               { label: 'Transferts',   value: s?.inscriptions_transfert ?? 0 },

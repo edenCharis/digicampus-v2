@@ -14,14 +14,14 @@ export const TABLE_CSS = `
   .pt-search-wrap { position: relative; }
   .pt-search-ico { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
   .pt-search { height: 34px; padding: 0 0.75rem 0 1.875rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; color: #1e293b; background: #f8fafc; outline: none; width: 190px; transition: all 0.15s; }
-  .pt-search:focus { border-color: #1AAFE6; background: #fff; box-shadow: 0 0 0 3px rgba(26,175,230,0.08); }
+  .pt-search:focus { border-color: #EF4444; background: #fff; box-shadow: 0 0 0 3px rgba(239,68,68,0.08); }
 
   /* Select filter */
   .pt-sel { height: 34px; padding: 0 2rem 0 0.625rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; color: #475569; background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center; appearance: none; -webkit-appearance: none; outline: none; cursor: pointer; transition: all 0.15s; }
-  .pt-sel:focus { border-color: #1AAFE6; background-color: #fff; box-shadow: 0 0 0 3px rgba(26,175,230,0.08); }
+  .pt-sel:focus { border-color: #EF4444; background-color: #fff; box-shadow: 0 0 0 3px rgba(239,68,68,0.08); }
 
   /* Add button */
-  .pt-add { height: 34px; padding: 0 0.875rem; border-radius: 8px; border: none; background: #1AAFE6; color: #fff; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; transition: background 0.15s; }
+  .pt-add { height: 34px; padding: 0 0.875rem; border-radius: 8px; border: none; background: #EF4444; color: #fff; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; transition: background 0.15s; }
   .pt-add:hover { background: #1490c2; }
 
   /* Table */
@@ -58,7 +58,7 @@ export const TABLE_CSS = `
   .pt-pg-btn { width: 28px; height: 28px; border-radius: 7px; border: 1px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; font-weight: 600; color: #475569; transition: all 0.12s; }
   .pt-pg-btn:hover:not(:disabled) { background: #f1f5f9; }
   .pt-pg-btn:disabled { opacity: 0.4; cursor: default; }
-  .pt-pg-btn.active { background: #1AAFE6; border-color: #1AAFE6; color: #fff; }
+  .pt-pg-btn.active { background: #EF4444; border-color: #EF4444; color: #fff; }
 `
 
 export const TABLE_STYLE = <style>{TABLE_CSS}</style>
@@ -161,7 +161,7 @@ export function FLabel({ label, req, children }: { label: string; req?: boolean;
 export function FInput({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input {...props} style={{ width: '100%', height: 38, padding: '0 0.75rem', border: '1px solid #e2e8f0', borderRadius: 9, fontSize: '0.875rem', color: '#1e293b', background: '#fff', outline: 'none', boxSizing: 'border-box', ...props.style }}
-      onFocus={e => { e.currentTarget.style.borderColor = '#1AAFE6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26,175,230,0.1)' }}
+      onFocus={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.1)' }}
       onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
     />
   )
@@ -186,7 +186,7 @@ export function ErrBanner({ msg }: { msg: string }) {
 
 export function BtnPrimary({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button {...props} style={{ height: 36, padding: '0 1.125rem', borderRadius: 9, border: 'none', background: '#1AAFE6', color: '#fff', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, opacity: props.disabled ? 0.6 : 1, ...props.style }}>
+    <button {...props} style={{ height: 36, padding: '0 1.125rem', borderRadius: 9, border: 'none', background: '#EF4444', color: '#fff', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, opacity: props.disabled ? 0.6 : 1, ...props.style }}>
       {children}
     </button>
   )

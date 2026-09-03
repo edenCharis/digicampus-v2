@@ -23,7 +23,7 @@ const STYLE = (
     .sc-search input { background:none; border:none; outline:none; font-size:.8125rem; color:#334155; width:100%; }
     .sc-search input::placeholder { color:#94a3b8; }
     .sc-sel { background:var(--bg); border:1px solid var(--br); border-radius:8px; padding:.45rem .75rem; font-size:.8125rem; color:#475569; cursor:pointer; outline:none; min-width:160px; max-width:280px; }
-    .sc-sel:focus { border-color:#1AAFE6; }
+    .sc-sel:focus { border-color:#EF4444; }
     .sc-table { width:100%; border-collapse:collapse; }
     .sc-table th { padding:.75rem 1.125rem; text-align:left; font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--br); background:var(--bg); white-space:nowrap; }
     .sc-table td { padding:.75rem 1.125rem; font-size:.8125rem; color:#334155; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
@@ -31,7 +31,7 @@ const STYLE = (
     .sc-table tr:hover td { background:#f8fafc; }
     .sc-primary { font-weight:600; color:#0f172a; }
     .sc-sub { font-size:.75rem; color:#94a3b8; margin-top:1px; }
-    .sc-mono { font-family:monospace; font-weight:700; font-size:.8125rem; color:#1AAFE6; }
+    .sc-mono { font-family:monospace; font-weight:700; font-size:.8125rem; color:#EF4444; }
     .sc-badge { display:inline-flex; align-items:center; padding:.25rem .625rem; border-radius:99px; font-size:.7rem; font-weight:700; white-space:nowrap; }
     .sc-actions { display:flex; align-items:center; gap:.25rem; }
     .sc-btn { padding:.35rem .5rem; border:none; background:none; border-radius:7px; cursor:pointer; color:#94a3b8; display:flex; align-items:center; transition:all .15s; }
@@ -42,10 +42,10 @@ const STYLE = (
     .sc-pager { display:flex; gap:.25rem; }
     .sc-pg { padding:.35rem .6rem; border:1px solid var(--br); border-radius:7px; background:#fff; font-size:.75rem; cursor:pointer; color:#64748b; transition:all .15s; min-width:2rem; text-align:center; }
     .sc-pg:hover { background:#f8fafc; }
-    .sc-pg.cur { background:#1AAFE6; color:#fff; border-color:#1AAFE6; font-weight:700; }
+    .sc-pg.cur { background:#EF4444; color:#fff; border-color:#EF4444; font-weight:700; }
     .sc-pg.dot { border:none; background:none; cursor:default; color:#94a3b8; }
-    .sc-add { display:inline-flex; align-items:center; gap:.375rem; background:#1AAFE6; color:#fff; border:none; border-radius:9px; padding:.5rem 1rem; font-size:.8125rem; font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap; }
-    .sc-add:hover { background:#0d9ed4; }
+    .sc-add { display:inline-flex; align-items:center; gap:.375rem; background:#EF4444; color:#fff; border:none; border-radius:9px; padding:.5rem 1rem; font-size:.8125rem; font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap; }
+    .sc-add:hover { background:#DC2626; }
     .sc-empty { padding:2.5rem 1rem; text-align:center; color:#94a3b8; font-size:.875rem; }
     .pg-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
     .pg-title  { font-size:1.125rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; margin:0; }
@@ -64,12 +64,12 @@ const STYLE = (
     .fl label { font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; }
     .fl label span { color:#ef4444; margin-left:2px; }
     .fl input, .fl select { width:100%; border:1px solid #e2e8f0; border-radius:9px; padding:.55rem .75rem; font-size:.875rem; color:#334155; outline:none; transition:border .15s; background:#fff; }
-    .fl input:focus, .fl select:focus { border-color:#1AAFE6; }
+    .fl input:focus, .fl select:focus { border-color:#EF4444; }
     .fl-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.875rem; }
     .btn-cancel { background:#f1f5f9; border:none; border-radius:9px; padding:.55rem 1.125rem; font-size:.875rem; font-weight:600; color:#475569; cursor:pointer; }
     .btn-cancel:hover { background:#e2e8f0; }
-    .btn-save { background:#1AAFE6; border:none; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:600; color:#fff; cursor:pointer; }
-    .btn-save:hover { background:#0d9ed4; }
+    .btn-save { background:#EF4444; border:none; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:600; color:#fff; cursor:pointer; }
+    .btn-save:hover { background:#DC2626; }
     .btn-save:disabled { opacity:.6; cursor:not-allowed; }
     .err { background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:.65rem .875rem; font-size:.8rem; color:#dc2626; }
   `}</style>
@@ -213,7 +213,7 @@ export default function ECUEsPage() {
                   <td><span className="sc-mono">{ec.code}</span></td>
                   <td><div className="sc-primary">{ec.libelle}</div></td>
                   <td>
-                    <span className="sc-badge" style={{ background: 'rgba(26,175,230,0.1)', color: '#1AAFE6' }}>
+                    <span className="sc-badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444' }}>
                       {ec.ue_code}
                     </span>
                     <div className="sc-sub" style={{ marginTop: 3 }}>{ec.ue_libelle}</div>

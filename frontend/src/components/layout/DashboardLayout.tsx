@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebarW = collapsed ? 72 : 256
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F1F5F9' }}>
+    <div style={{ minHeight: '100vh', background: '#F7F7F8' }}>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
         body { overflow-x: hidden; }
@@ -162,15 +162,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .dc-user-pill:hover { background: #f1f5f9; border-color: #e2e8f0; }
         .dc-user-avatar {
           width: 28px; height: 28px; border-radius: 50%;
-          background: linear-gradient(135deg, #0E3358 0%, #1AAFE6 100%);
+          background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
           display: flex; align-items: center; justify-content: center;
           font-size: 0.68rem; font-weight: 700; color: #fff; flex-shrink: 0;
           overflow: hidden; object-fit: cover;
         }
         .dc-user-name { font-size: 0.8rem; font-weight: 600; color: #1e293b; }
         .dc-role-badge {
-          font-size: 0.6rem; font-weight: 700; color: #1AAFE6;
-          background: rgba(26,175,230,0.08); border-radius: 20px;
+          font-size: 0.6rem; font-weight: 700; color: #EF4444;
+          background: rgba(239,68,68,0.08); border-radius: 20px;
           padding: 0.1rem 0.5rem; text-transform: uppercase; letter-spacing: 0.06em;
         }
         .dc-chevron { color: #cbd5e1; transition: transform 0.2s; }
@@ -207,7 +207,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           margin-left: ${sidebarW}px;
           padding-top: 56px;
           min-height: 100vh;
-          background: #F1F5F9;
+          background: #F7F7F8;
           transition: margin-left 0.22s cubic-bezier(.4,0,.2,1);
         }
         @media (max-width: 1023px) { .dc-content { margin-left: 0 !important; } }
@@ -228,11 +228,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .dc-denied h2 { font-size: 1.125rem; font-weight: 700; color: #1e293b; margin: 0; }
         .dc-denied p { font-size: 0.875rem; color: #64748b; margin: 0; max-width: 300px; line-height: 1.6; }
         .dc-denied-btn {
-          padding: 0.5rem 1.5rem; background: #1AAFE6; color: #fff; border: none;
+          padding: 0.5rem 1.5rem; background: #EF4444; color: #fff; border: none;
           border-radius: 9px; font-size: 0.875rem; font-weight: 600; cursor: pointer;
           transition: background 0.15s;
         }
-        .dc-denied-btn:hover { background: #1490c2; }
+        .dc-denied-btn:hover { background: #DC2626; }
       `}</style>
 
       <Sidebar
@@ -289,7 +289,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {profileOpen && (
                 <div className="dc-profile-dropdown">
                   <div className="dc-profile-header" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#0E3358,#1AAFE6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#fff', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#DC2626,#EF4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#fff', overflow: 'hidden', flexShrink: 0 }}>
                       {user.photo
                         ? <img src={user.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : (user.nom || user.login)[0].toUpperCase()
@@ -322,7 +322,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <h2>Accès restreint</h2>
               <p>
                 Vous n&apos;avez pas les permissions pour accéder à cette section.
-                <br />Rôle actuel : <strong style={{ color: '#1AAFE6' }}>{ROLE_LABELS[user.role]}</strong>
+                <br />Rôle actuel : <strong style={{ color: '#EF4444' }}>{ROLE_LABELS[user.role]}</strong>
               </p>
               <button className="dc-denied-btn" onClick={() => router.push(ROLE_HOME[user.role] ?? '/')}>
                 Retour à mon espace

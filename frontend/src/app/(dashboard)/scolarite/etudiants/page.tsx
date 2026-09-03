@@ -16,7 +16,7 @@ interface ApiList<T> { count: number; results: T[] }
 
 const STATUT_COLORS: Record<string, { bg: string; color: string; label: string }> = {
   'en cours': { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b', label: 'En cours' },
-  admis:      { bg: 'rgba(26,175,230,0.1)',  color: '#1AAFE6', label: 'Admis' },
+  admis:      { bg: 'rgba(239,68,68,0.1)',  color: '#EF4444', label: 'Admis' },
   inscrit:    { bg: 'rgba(16,185,129,0.1)',  color: '#10b981', label: 'Inscrit' },
   'refusé':   { bg: 'rgba(239,68,68,0.1)',   color: '#ef4444', label: 'Refusé' },
 }
@@ -30,7 +30,7 @@ const STYLE = (
     .sc-search input { background:none; border:none; outline:none; font-size:.8125rem; color:#334155; width:100%; }
     .sc-search input::placeholder { color:#94a3b8; }
     .sc-sel { background:var(--bg); border:1px solid var(--br); border-radius:8px; padding:.45rem .75rem; font-size:.8125rem; color:#475569; cursor:pointer; outline:none; }
-    .sc-sel:focus { border-color:#1AAFE6; }
+    .sc-sel:focus { border-color:#EF4444; }
     .sc-table { width:100%; border-collapse:collapse; }
     .sc-table th { padding:.75rem 1.125rem; text-align:left; font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--br); background:var(--bg); white-space:nowrap; }
     .sc-table td { padding:.75rem 1.125rem; font-size:.8125rem; color:#334155; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
@@ -50,10 +50,10 @@ const STYLE = (
     .sc-pager { display:flex; gap:.25rem; }
     .sc-pg { padding:.35rem .6rem; border:1px solid var(--br); border-radius:7px; background:#fff; font-size:.75rem; cursor:pointer; color:#64748b; transition:all .15s; min-width:2rem; text-align:center; }
     .sc-pg:hover { background:#f8fafc; }
-    .sc-pg.cur { background:#1AAFE6; color:#fff; border-color:#1AAFE6; font-weight:700; }
+    .sc-pg.cur { background:#EF4444; color:#fff; border-color:#EF4444; font-weight:700; }
     .sc-pg.dot { border:none; background:none; cursor:default; color:#94a3b8; }
-    .sc-add { display:inline-flex; align-items:center; gap:.375rem; background:#1AAFE6; color:#fff; border:none; border-radius:9px; padding:.5rem 1rem; font-size:.8125rem; font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap; }
-    .sc-add:hover { background:#0d9ed4; }
+    .sc-add { display:inline-flex; align-items:center; gap:.375rem; background:#EF4444; color:#fff; border:none; border-radius:9px; padding:.5rem 1rem; font-size:.8125rem; font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap; }
+    .sc-add:hover { background:#DC2626; }
     .sc-empty { padding:2.5rem 1rem; text-align:center; color:#94a3b8; font-size:.875rem; }
     .pg-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem; }
     .pg-title  { font-size:1.125rem; font-weight:800; color:#0f172a; letter-spacing:-.02em; margin:0; }
@@ -73,12 +73,12 @@ const STYLE = (
     .fl label { font-size:.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; }
     .fl label span { color:#ef4444; margin-left:2px; }
     .fl input, .fl select, .fl textarea { width:100%; border:1px solid #e2e8f0; border-radius:9px; padding:.55rem .75rem; font-size:.875rem; color:#334155; outline:none; transition:border .15s; background:#fff; }
-    .fl input:focus, .fl select:focus { border-color:#1AAFE6; }
+    .fl input:focus, .fl select:focus { border-color:#EF4444; }
     .fl-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.875rem; }
     .fl-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.875rem; }
     .err-box { background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:.625rem .875rem; font-size:.8125rem; color:#ef4444; }
-    .btn-ok { background:#1AAFE6; color:#fff; border:none; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:600; cursor:pointer; }
-    .btn-ok:hover { background:#0d9ed4; }
+    .btn-ok { background:#EF4444; color:#fff; border:none; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:600; cursor:pointer; }
+    .btn-ok:hover { background:#DC2626; }
     .btn-ok:disabled { opacity:.6; cursor:not-allowed; }
     .btn-cancel { background:none; border:1px solid #e2e8f0; border-radius:9px; padding:.55rem 1.25rem; font-size:.875rem; font-weight:500; color:#64748b; cursor:pointer; }
     .btn-cancel:hover { background:#f8fafc; }
@@ -90,7 +90,7 @@ function initials(nom: string, prenom: string) {
   return ((nom[0] ?? '') + (prenom[0] ?? '')).toUpperCase()
 }
 function avatarColor(id: number) {
-  const COLORS = ['#1AAFE6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
+  const COLORS = ['#EF4444','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
   return COLORS[id % COLORS.length]
 }
 

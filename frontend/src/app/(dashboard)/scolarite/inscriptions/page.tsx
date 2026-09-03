@@ -35,7 +35,7 @@ const MENTIONS = ['Passable','Assez-bien','Bien','Très-bien']
 /* ── Inline micro-components ── */
 function TypeBadge({ type }: { type: string }) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    nouveau:   { bg: 'rgba(26,175,230,0.12)',  color: '#1AAFE6',  label: 'Nouveau' },
+    nouveau:   { bg: 'rgba(239,68,68,0.12)',  color: '#EF4444',  label: 'Nouveau' },
     reinscrit: { bg: 'rgba(16,185,129,0.12)',  color: '#10b981',  label: 'Réinscrit' },
     transfert: { bg: 'rgba(245,158,11,0.12)',  color: '#f59e0b',  label: 'Transfert' },
   }
@@ -47,7 +47,7 @@ function StatutBadge({ statut }: { statut: string }) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
     inscrit:    { bg: 'rgba(16,185,129,0.12)',  color: '#10b981', label: 'Inscrit' },
     'en cours': { bg: 'rgba(245,158,11,0.12)',  color: '#f59e0b', label: 'En cours' },
-    admis:      { bg: 'rgba(26,175,230,0.12)',  color: '#1AAFE6', label: 'Admis' },
+    admis:      { bg: 'rgba(239,68,68,0.12)',  color: '#EF4444', label: 'Admis' },
     'refusé':   { bg: 'rgba(239,68,68,0.12)',   color: '#ef4444', label: 'Refusé' },
   }
   const s = map[statut] ?? { bg: '#f1f5f9', color: '#64748b', label: statut }

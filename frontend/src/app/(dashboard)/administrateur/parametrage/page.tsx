@@ -116,9 +116,9 @@ export default function ParametragePage() {
         .pm-sub   { font-size:0.75rem; color:#94a3b8; margin:.25rem 0 0; }
         .pm-tabs  { display:flex; gap:6px; margin-bottom:1.25rem; flex-wrap:wrap; }
         .pm-tab   { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:9px; border:1.5px solid #e2e8f0; background:#fff; font-size:0.8rem; font-weight:600; color:#64748b; cursor:pointer; transition:all .15s; }
-        .pm-tab.on{ border-color:#1AAFE6; background:rgba(26,175,230,0.07); color:#1AAFE6; }
+        .pm-tab.on{ border-color:#EF4444; background:rgba(239,68,68,0.07); color:#EF4444; }
         .pm-badge { font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:20px; background:#f1f5f9; color:#94a3b8; }
-        .pm-tab.on .pm-badge { background:rgba(26,175,230,0.15); color:#1AAFE6; }
+        .pm-tab.on .pm-badge { background:rgba(239,68,68,0.15); color:#EF4444; }
         .pm-card  { background:#fff; border:1px solid #e8edf3; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(15,23,42,0.04); }
         .pm-bar   { display:flex; justify-content:flex-end; padding:.75rem 1rem; border-bottom:1px solid #f1f5f9; }
         .pm-row   { display:flex; align-items:center; gap:.75rem; padding:.875rem 1.25rem; transition:background .1s; }

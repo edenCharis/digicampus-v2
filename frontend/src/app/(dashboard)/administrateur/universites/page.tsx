@@ -67,7 +67,7 @@ export default function UniversitesPage() {
     setDel(null); load()
   }
 
-  const COLORS = ['#1AAFE6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
+  const COLORS = ['#EF4444','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#3b82f6','#ec4899']
   function accent(u: University) { return COLORS[u.id % COLORS.length] }
 
   return (

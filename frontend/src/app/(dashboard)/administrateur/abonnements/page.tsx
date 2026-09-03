@@ -95,7 +95,7 @@ export default function AbonnementsPage() {
         .mod-chip  { display:inline-flex; align-items:center; font-size:0.63rem; font-weight:700; padding:2px 7px; border-radius:20px; background:#f1f5f9; color:#64748b; text-transform:uppercase; letter-spacing:.04em; }
         .mod-chips { display:flex; flex-wrap:wrap; gap:3px; }
         .mod-sel   { display:inline-flex; align-items:center; gap:5px; font-size:0.8rem; padding:5px 10px; border-radius:8px; border:1.5px solid #e2e8f0; cursor:pointer; transition:all .12s; user-select:none; }
-        .mod-sel.on{ border-color:#1AAFE6; background:rgba(26,175,230,0.07); color:#1AAFE6; font-weight:600; }
+        .mod-sel.on{ border-color:#EF4444; background:rgba(239,68,68,0.07); color:#EF4444; font-weight:600; }
         .mod-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px; }
       `}</style>
 
@@ -139,7 +139,7 @@ export default function AbonnementsPage() {
                 <tr key={ab.id}>
                   <td>
                     <div className="pt-cell-row">
-                      <div className="pt-avatar" style={{ background: '#1AAFE6', fontSize: '0.68rem' }}>
+                      <div className="pt-avatar" style={{ background: '#EF4444', fontSize: '0.68rem' }}>
                         {(ab.university_code || '??').slice(0, 3).toUpperCase()}
                       </div>
                       <div>

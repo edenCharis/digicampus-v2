@@ -88,10 +88,8 @@ function DepModal({ open, dep, etablissementId, onClose, onSaved }:
         {err && <div style={{ padding:'0 1.5rem', paddingTop:'1rem' }}><div className="err-b"><AlertCircle size={14} color="#dc2626" style={{ flexShrink:0,marginTop:1 }} /><div style={{ fontSize:'.8rem',color:'#b91c1c' }}>{err}</div></div></div>}
         <form onSubmit={submit}>
           <div className="mo-body">
-            <div className="g2">
-              <div className="fl"><label>Code *</label><input required value={form.code} onChange={e => setForm(f=>({...f,code:e.target.value}))} placeholder="RH" /></div>
-              <div className="fl"><label>Nom *</label><input required value={form.nom} onChange={e => setForm(f=>({...f,nom:e.target.value}))} placeholder="Ressources Humaines" /></div>
-            </div>
+            <div className="fl" style={{ maxWidth:120 }}><label>Code *</label><input required value={form.code} onChange={e => setForm(f=>({...f,code:e.target.value}))} placeholder="RH" /></div>
+            <div className="fl"><label>Nom *</label><input required value={form.nom} onChange={e => setForm(f=>({...f,nom:e.target.value}))} placeholder="Ressources Humaines" /></div>
             <div className="fl"><label>Description</label><textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} placeholder="Description optionnelle…" /></div>
           </div>
           <div className="mo-foot">

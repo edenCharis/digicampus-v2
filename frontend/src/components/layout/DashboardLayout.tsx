@@ -103,9 +103,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div style={{ minHeight: '100vh', background: '#F7F7F8' }}>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
-        body { overflow-x: hidden; }
+        body { overflow-x: hidden; cursor: default; }
         * { scrollbar-width: none; }
         *::-webkit-scrollbar { display: none; }
+        a, button, [role="button"], label[for], select { cursor: pointer; }
+        input, textarea { cursor: text; }
+        input[type="checkbox"], input[type="radio"] { cursor: pointer; }
+        input[type="date"], input[type="number"] { cursor: default; }
 
         /* ── Topbar ── */
         .dc-topbar {

@@ -6,7 +6,7 @@ import {
   GraduationCap, Users, BookOpen, ClipboardList,
   UserCheck, Award, FileText, BarChart2, CreditCard, BookMarked,
   ShieldCheck, Briefcase, LogOut, X, ChevronRight, ChevronDown,
-  Building2, Activity, Settings, Globe, CalendarDays, RotateCcw,
+  Building2, Activity, Settings, Globe, RotateCcw,
   Layers, GitFork, LayoutGrid,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -29,18 +29,7 @@ const ALL_NAV_ITEMS: SidebarItem[] = [
   { label: 'Comptes',          href: '/administrateur/comptes',        icon: <Users size={17} /> },
   { label: 'Abonnements',      href: '/administrateur/abonnements',    icon: <Globe size={17} /> },
   { label: 'Logs',             href: '/administrateur/logs',           icon: <Activity size={17} /> },
-  {
-    label: 'Paramétrage',
-    icon: <Settings size={17} />,
-    children: [
-      { label: 'Années',       href: '/administrateur/annees',         icon: <CalendarDays size={15} /> },
-      { label: 'Cycles',       href: '/administrateur/cycles',         icon: <RotateCcw size={15} /> },
-      { label: 'Parcours',     href: '/administrateur/parcours',       icon: <GitFork size={15} /> },
-      { label: 'Spécialités',  href: '/administrateur/specialites',    icon: <BookMarked size={15} /> },
-      { label: 'Semestres',    href: '/administrateur/semestres',      icon: <BookOpen size={15} /> },
-      { label: 'Niveaux',      href: '/administrateur/niveaux',        icon: <Layers size={15} /> },
-    ],
-  },
+  { label: 'Paramétrage',      href: '/administrateur/parametrage',    icon: <Settings size={17} /> },
   // Scolarité
   { label: 'Tableau de bord',  href: '/scolarite',         icon: <BarChart2 size={17} />,    exact: true },
   { label: 'Inscriptions',     href: '/scolarite/inscriptions', icon: <ClipboardList size={17} /> },
